@@ -204,13 +204,19 @@ const duckSynth: ThemeVoice = {
 
 // ---- real duck recording (CC0, BigSoundBank) ------------------------------
 // The bundled clip is a 21s field recording of several ducks. On first use we
-// decode it and auto-locate the single cleanest, loudest quack, then reuse that
-// one slice at different pitches/counts so every cue sounds consistent.
+// decode it and auto-locate several distinct, clean quacks. Cues then use
+// different real quacks (rotating countdown, an excited double-quack "go", a
+// rising triple "done") for a livelier, more natural sound than reusing one.
+interface Quack {
+  offset: number
+  duration: number
+}
 let duckBuffer: AudioBuffer | null = null
-let duckSlice: { offset: number; duration: number } | null = null
+let duckQuacks: Quack[] = []
 let duckLoading: Promise<void> | null = null
+let tickTurn = 0 // rotates through quacks so countdown beeps vary
 
-function findBestQuack(buf: AudioBuffer): { offset: number; duration: number } {
+function findQuacks(buf: AudioBuffer): Quack[] {
   const data = buf.getChannelData(0)
   const sr = buf.sampleRate
   const win = Math.max(1, Math.floor(sr * 0.01)) // 10ms RMS windows
@@ -222,7 +228,7 @@ function findBestQuack(buf: AudioBuffer): { offset: number; duration: number } {
     env.push(Math.sqrt(s / (end - i)))
   }
   const max = env.reduce((m, v) => (v > m ? v : m), 0)
-  const thr = max * 0.18
+  const thr = max * 0.2
 
   // contiguous windows above threshold = candidate quacks
   const regions: [number, number][] = []
@@ -237,33 +243,33 @@ function findBestQuack(buf: AudioBuffer): { offset: number; duration: number } {
   }
   if (start >= 0) regions.push([start, env.length])
 
-  // merge regions separated by < 80ms (same quack)
+  // merge regions separated by < 70ms (same quack)
   const merged: [number, number][] = []
   for (const r of regions) {
     const last = merged[merged.length - 1]
-    if (last && r[0] - last[1] < 8) last[1] = r[1]
+    if (last && r[0] - last[1] < 7) last[1] = r[1]
     else merged.push([r[0], r[1]])
   }
 
-  // pick the loudest region with a plausible single-quack length
-  let best: [number, number] | null = null
-  let bestPeak = 0
-  for (const [a, b] of merged) {
-    const durSec = ((b - a) * win) / sr
-    if (durSec < 0.09 || durSec > 0.5) continue
-    let peak = 0
-    for (let k = a; k < b; k++) if (env[k] > peak) peak = env[k]
-    if (peak > bestPeak) {
-      bestPeak = peak
-      best = [a, b]
-    }
-  }
-  if (!best) best = [0, Math.min(env.length, Math.floor((0.3 * sr) / win))]
+  // keep plausible single-quack lengths, score by peak loudness
+  const pad = Math.floor(sr * 0.008)
+  const scored = merged
+    .map(([a, b]) => {
+      let peak = 0
+      for (let k = a; k < b; k++) if (env[k] > peak) peak = env[k]
+      const durSec = ((b - a) * win) / sr
+      const offset = Math.max(0, a * win - pad) / sr
+      const endSec = Math.min(data.length, b * win + pad) / sr
+      return { peak, durSec, quack: { offset, duration: Math.max(0.12, endSec - offset) } }
+    })
+    .filter((r) => r.durSec >= 0.08 && r.durSec <= 0.45)
+    .sort((x, y) => y.peak - x.peak)
+    .slice(0, 6) // the loudest handful of clean quacks
 
-  const pad = Math.floor(sr * 0.01)
-  const offset = Math.max(0, best[0] * win - pad) / sr
-  const endSec = Math.min(data.length, best[1] * win + pad) / sr
-  return { offset, duration: Math.max(0.12, endSec - offset) }
+  if (scored.length === 0) {
+    return [{ offset: 0, duration: Math.min(0.3, buf.duration) }]
+  }
+  return scored.map((r) => r.quack)
 }
 
 export function loadDuck(ctx: AudioContext): Promise<void> {
@@ -274,7 +280,7 @@ export function loadDuck(ctx: AudioContext): Promise<void> {
       const arr = await res.arrayBuffer()
       const buf = await ctx.decodeAudioData(arr)
       duckBuffer = buf
-      duckSlice = findBestQuack(buf)
+      duckQuacks = findQuacks(buf)
     })().catch((e) => {
       duckLoading = null // allow a retry
       throw e
@@ -283,45 +289,69 @@ export function loadDuck(ctx: AudioContext): Promise<void> {
   return duckLoading
 }
 
-// Play the extracted quack, pitched by `rate` and gently faded to avoid clicks.
-function playQuack(ctx: AudioContext, out: GainNode, when: number, rate: number, gain = 0.95) {
-  if (!duckBuffer || !duckSlice) return
+// Play one quack slice, pitched by `rate`, cleaned with a highpass + a gentle
+// presence bump, and faded to avoid clicks at the slice edges.
+function playQuack(
+  ctx: AudioContext,
+  out: GainNode,
+  when: number,
+  quack: Quack,
+  rate: number,
+  gain = 0.95,
+) {
+  if (!duckBuffer) return
   const src = ctx.createBufferSource()
+  const hp = ctx.createBiquadFilter()
+  const presence = ctx.createBiquadFilter()
   const g = ctx.createGain()
   src.buffer = duckBuffer
   src.playbackRate.value = rate
-  const realDur = duckSlice.duration / rate
+  hp.type = 'highpass'
+  hp.frequency.value = 200 // cut low rumble/wind from the field recording
+  presence.type = 'peaking'
+  presence.frequency.value = 1200 // emphasise the nasal "quack" formant
+  presence.Q.value = 0.8
+  presence.gain.value = 4
+  const realDur = quack.duration / rate
   g.gain.setValueAtTime(0.0001, when)
   g.gain.linearRampToValueAtTime(gain, when + 0.012)
-  g.gain.setValueAtTime(gain, Math.max(when + 0.012, when + realDur - 0.03))
+  g.gain.setValueAtTime(gain, Math.max(when + 0.012, when + realDur - 0.035))
   g.gain.linearRampToValueAtTime(0.0001, when + realDur)
-  src.connect(g).connect(out)
-  src.start(when, duckSlice.offset, duckSlice.duration)
+  src.connect(hp).connect(presence).connect(g).connect(out)
+  src.start(when, quack.offset, quack.duration)
   src.stop(when + realDur + 0.03)
 }
+
+// small pitch wobble so repeated quacks don't sound mechanical
+const jitter = () => 1 + (Math.random() - 0.5) * 0.06
+const q = (i: number): Quack => duckQuacks[i % duckQuacks.length]
 
 const duck: ThemeVoice = {
   play(ctx, out, kind, when) {
     void loadDuck(ctx) // kick off decoding if needed
-    if (!duckBuffer || !duckSlice) {
+    if (!duckBuffer || duckQuacks.length === 0) {
       duckSynth.play(ctx, out, kind, when) // not decoded yet
       return
     }
     switch (kind) {
       case 'tick':
-        playQuack(ctx, out, when, 1.18, 0.7)
+        // rotate through the quacks so the 3-2-1 beeps each sound different
+        playQuack(ctx, out, when, q(tickTurn++), 1.12 * jitter(), 0.72)
         break
       case 'go':
-        playQuack(ctx, out, when, 1.0)
-        playQuack(ctx, out, when + 0.16, 1.12)
+        // excited double-quack from two different ducks
+        playQuack(ctx, out, when, q(0), 1.0 * jitter())
+        playQuack(ctx, out, when + 0.15, q(1), 1.1 * jitter())
         break
       case 'rest':
-        playQuack(ctx, out, when, 0.82, 0.8)
+        // a single lower, calmer quack
+        playQuack(ctx, out, when, q(2), 0.85 * jitter(), 0.82)
         break
       case 'done':
-        playQuack(ctx, out, when, 1.0)
-        playQuack(ctx, out, when + 0.18, 1.15)
-        playQuack(ctx, out, when + 0.36, 1.32)
+        // rising triple of distinct quacks
+        playQuack(ctx, out, when, q(0), 0.98)
+        playQuack(ctx, out, when + 0.18, q(1), 1.1)
+        playQuack(ctx, out, when + 0.36, q(2), 1.24)
         break
     }
   },
