@@ -56,7 +56,9 @@ export interface Program {
 
 // ---- Timeline segments -----------------------------------------------------
 
-export type SegmentType = 'prep' | 'hang' | 'rest' | 'rest-set' | 'done'
+export type SegmentType = 'prep' | 'hang' | 'rest' | 'rest-set' | 'switch' | 'done'
+
+export type Hand = 'L' | 'R'
 
 export interface Segment {
   type: SegmentType
@@ -68,6 +70,14 @@ export interface Segment {
   repsInSet: number
   /** target added weight for this segment (weighted programs only) */
   targetWeight?: number
+  /** which hand this hang is for (single-hand / unilateral mode) */
+  hand?: Hand
+}
+
+/** Options that change how a program expands into a timeline (from settings). */
+export interface BuildOptions {
+  unilateral?: boolean // one hand at a time, alternating L/R
+  switchSecs?: number // rest to swap hands between L and R
 }
 
 // ---- Session history -------------------------------------------------------

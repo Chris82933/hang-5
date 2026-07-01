@@ -1,6 +1,6 @@
 import { useSettings, type SoundTheme, type ThemeMode } from '../store/settings'
 import { soundEngine } from '../engine/audio'
-import { Field, Toggle, Segmented } from '../components/ui'
+import { Field, Toggle, Segmented, Stepper } from '../components/ui'
 import type { WeightUnit } from '../types'
 
 const SOUND_THEMES: { value: SoundTheme; label: string }[] = [
@@ -9,10 +9,11 @@ const SOUND_THEMES: { value: SoundTheme; label: string }[] = [
   { value: 'duck', label: '🦆 Duck' },
 ]
 
-const CUE_KEYS: { key: 'prep' | 'hang' | 'rest' | 'done'; label: string }[] = [
+const CUE_KEYS: { key: 'prep' | 'hang' | 'rest' | 'switch' | 'done'; label: string }[] = [
   { key: 'prep', label: 'Prepare' },
   { key: 'hang', label: 'Hang' },
   { key: 'rest', label: 'Rest' },
+  { key: 'switch', label: 'Switch hands' },
   { key: 'done', label: 'Done' },
 ]
 
@@ -86,6 +87,27 @@ export default function Settings() {
         ]}
         onChange={s.setWeightUnit}
       />
+
+      <div className="section-label">Single-hand lifts</div>
+      <div className="card">
+        <Field
+          label="One hand at a time"
+          hint="Fingerboard lifts — alternate left & right each rep"
+        >
+          <Toggle on={s.unilateral} onChange={s.setUnilateral} />
+        </Field>
+        {s.unilateral && (
+          <Field label="Switch time" hint="Rest to swap hands between left and right">
+            <Stepper
+              value={s.switchSecs}
+              min={1}
+              max={60}
+              suffix="s"
+              onChange={s.setSwitchSecs}
+            />
+          </Field>
+        )}
+      </div>
 
       <div className="section-label">Workout cue colours</div>
       <div className="card">

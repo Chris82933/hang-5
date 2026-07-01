@@ -4,6 +4,7 @@ import type { EdgeType, HandPosition, Program } from '../types'
 import { resolveProgram } from '../data/programs'
 import { saveProgram } from '../data/db'
 import { useActive } from '../store/active'
+import { useSettings } from '../store/settings'
 import { Field, Stepper, Segmented } from '../components/ui'
 import { WeightedConfig } from '../components/WeightedConfig'
 import { fmtDuration } from '../lib/format'
@@ -29,6 +30,8 @@ export default function Configure() {
   const { id } = useParams()
   const nav = useNavigate()
   const setActive = useActive((s) => s.setProgram)
+  const unilateral = useSettings((s) => s.unilateral)
+  const switchSecs = useSettings((s) => s.switchSecs)
   const [prog, setProg] = useState<Program | null>(null)
 
   useEffect(() => {
@@ -36,6 +39,8 @@ export default function Configure() {
   }, [id])
 
   if (!prog) return <div className="page empty">Loading…</div>
+
+  const opts = { unilateral, switchSecs }
 
   const p = prog.params
   const setP = (patch: Partial<typeof p>) => setProg({ ...prog, params: { ...p, ...patch } })
@@ -68,7 +73,9 @@ export default function Configure() {
         <div>
           <h1 style={{ fontSize: 22 }}>{prog.name}</h1>
           <div className="sub">
-            {fmtDuration(totalDurationSecs(prog))} total · {fmtDuration(totalHangSecs(prog))} hanging
+            {fmtDuration(totalDurationSecs(prog, opts))} total ·{' '}
+            {fmtDuration(totalHangSecs(prog, opts))} hanging
+            {unilateral && ' · one hand at a time'}
           </div>
         </div>
       </div>

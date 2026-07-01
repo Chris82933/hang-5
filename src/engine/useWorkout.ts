@@ -25,15 +25,18 @@ export interface WorkoutState {
   totalSegments: number
   progress: number // 0..1 through the whole workout
   targetWeight?: number // weighted programs: added load for the current hang
+  hand?: 'L' | 'R' // single-hand mode: which hand the current hang is for
 }
 
 /**
- * Runs a program. Audio cues and the on-screen colour/countdown are both driven
- * off `soundEngine.now()` (the AudioContext clock), so they stay perfectly
- * matched. Pause suspends that clock; skip shifts the timeline origin.
+ * Runs a program. The visual timeline runs off a wall clock; audio cues are
+ * scheduled alongside it on the AudioContext clock so they stay matched without
+ * the timer depending on audio being unlocked.
  */
 export function useWorkout(program: Program) {
   const keepAwake = useSettings((s) => s.keepAwake)
+  const unilateral = useSettings((s) => s.unilateral)
+  const switchSecs = useSettings((s) => s.switchSecs)
 
   const segments = useRef<Segment[]>([])
   const segStart = useRef<number[]>([]) // elapsed at which each segment starts
@@ -62,7 +65,7 @@ export function useWorkout(program: Program) {
 
   // Build the timeline + audio event list from the program (pure, memo-ish).
   const rebuild = useCallback(() => {
-    const segs = buildSegments(program)
+    const segs = buildSegments(program, { unilateral, switchSecs })
     const starts: number[] = []
     let acc = 0
     for (const s of segs) {
@@ -95,7 +98,7 @@ export function useWorkout(program: Program) {
     })
     evs.sort((a, b) => a.at - b.at)
     events.current = evs
-  }, [program])
+  }, [program, unilateral, switchSecs])
 
   // The visual timeline runs off a wall clock (performance.now) so it never
   // depends on the AudioContext being unlocked. `origin` is the perf timestamp
@@ -178,6 +181,7 @@ export function useWorkout(program: Program) {
         totalSegments: segments.current.length,
         progress: elapsed / totalDuration.current,
         targetWeight: seg.targetWeight,
+        hand: seg.hand,
       }
     })
   }, [elapsedNow, finish])
@@ -278,14 +282,15 @@ export function useWorkout(program: Program) {
         }
       }
     })
-    const rps = program.params.repsPerSet || 1
+    // in single-hand mode each rep is two hangs (L + R)
+    const hangsPerRep = (unilateral ? 2 : 1) * (program.params.repsPerSet || 1)
     return {
       completedReps,
-      completedSets: Math.floor(completedReps / rps),
+      completedSets: Math.floor(completedReps / hangsPerRep),
       totalHangSecs: Math.round(hangSecs),
       topWeight,
     }
-  }, [state.status, elapsedNow, program.params.repsPerSet])
+  }, [state.status, elapsedNow, program.params.repsPerSet, unilateral])
 
   // cleanup on unmount
   useEffect(() => {

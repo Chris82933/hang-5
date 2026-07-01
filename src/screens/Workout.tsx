@@ -63,6 +63,8 @@ export default function Workout() {
       case 'rest':
       case 'rest-set':
         return cueColors.rest
+      case 'switch':
+        return cueColors.switch
       default:
         return cueColors.done
     }
