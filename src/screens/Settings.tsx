@@ -8,6 +8,11 @@ const SOUND_THEMES: { value: SoundTheme; label: string }[] = [
   { value: 'piano', label: 'Piano' },
   { value: 'piano-warm', label: 'Warm piano' },
   { value: 'piano-bright', label: 'Bright piano' },
+  { value: 'marimba', label: 'Marimba' },
+  { value: 'bells', label: 'Bells' },
+  { value: 'chiptune', label: 'Chiptune' },
+  { value: 'cow', label: 'Cow' },
+  { value: 'bird', label: 'Bird' },
   { value: 'duck', label: 'Duck' },
 ]
 

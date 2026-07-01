@@ -4,7 +4,17 @@ import { persist } from 'zustand/middleware'
 import type { WeightUnit } from '../types'
 
 export type ThemeMode = 'dark' | 'light'
-export type SoundTheme = 'beeps' | 'piano' | 'piano-bright' | 'piano-warm' | 'duck'
+export type SoundTheme =
+  | 'beeps'
+  | 'piano'
+  | 'piano-warm'
+  | 'piano-bright'
+  | 'marimba'
+  | 'bells'
+  | 'chiptune'
+  | 'cow'
+  | 'bird'
+  | 'duck'
 
 export interface CueColors {
   prep: string

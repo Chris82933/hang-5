@@ -98,34 +98,35 @@ const brightNote: NoteFn = (ctx, out, when, freq, dur = 0.55) => {
   o2.stop(when + dur + 0.02)
 }
 
-// Warm: two slightly-detuned triangles + a sine sub through a lowpass — soft
-// and friendly.
-const warmNote: NoteFn = (ctx, out, when, freq, dur = 1) => {
+// Warm: an octave lower, pure sines through a dark lowpass with a slow, soft
+// attack and long release — round and mellow, clearly distinct from the crisp
+// mid-register classic piano.
+const warmNote: NoteFn = (ctx, out, when, freq, dur = 1.5) => {
+  const f = freq * 0.5 // drop an octave for a rounder voice
   const g = ctx.createGain()
   const lp = ctx.createBiquadFilter()
   lp.type = 'lowpass'
-  lp.frequency.value = 1500
+  lp.frequency.value = 850
   g.gain.setValueAtTime(0.0001, when)
-  g.gain.exponentialRampToValueAtTime(0.8, when + 0.03)
+  g.gain.exponentialRampToValueAtTime(0.85, when + 0.06) // slow, cushioned attack
   g.gain.exponentialRampToValueAtTime(0.0001, when + dur)
   g.connect(lp).connect(out)
-  for (const detune of [-6, 6]) {
+  // fundamental + soft octave + a quiet fifth for warmth (all sine)
+  const partials: [number, number][] = [
+    [1, 1],
+    [2, 0.22],
+    [3, 0.1],
+  ]
+  for (const [mult, gain] of partials) {
     const o = ctx.createOscillator()
-    o.type = 'triangle'
-    o.frequency.setValueAtTime(freq, when)
-    o.detune.value = detune
-    o.connect(g)
+    const pg = ctx.createGain()
+    o.type = 'sine'
+    o.frequency.setValueAtTime(f * mult, when)
+    pg.gain.value = gain
+    o.connect(pg).connect(g)
     o.start(when)
-    o.stop(when + dur + 0.03)
+    o.stop(when + dur + 0.05)
   }
-  const sub = ctx.createOscillator()
-  const sg = ctx.createGain()
-  sub.type = 'sine'
-  sub.frequency.setValueAtTime(freq, when)
-  sg.gain.value = 0.5
-  sub.connect(sg).connect(g)
-  sub.start(when)
-  sub.stop(when + dur + 0.03)
 }
 
 // All piano variants share the same musical cues; only the note timbre differs.
@@ -158,6 +159,189 @@ function pianoVoice(note: NoteFn): ThemeVoice {
 const piano = pianoVoice(classicNote)
 const pianoBright = pianoVoice(brightNote)
 const pianoWarm = pianoVoice(warmNote)
+
+// Marimba: sine fundamental + a quiet high partial, fast percussive decay.
+const marimbaNote: NoteFn = (ctx, out, when, freq, dur = 0.5) => {
+  const g = ctx.createGain()
+  g.gain.setValueAtTime(0.0001, when)
+  g.gain.exponentialRampToValueAtTime(0.9, when + 0.004)
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur * 0.6)
+  g.connect(out)
+  const o1 = ctx.createOscillator()
+  o1.type = 'sine'
+  o1.frequency.setValueAtTime(freq, when)
+  o1.connect(g)
+  o1.start(when)
+  o1.stop(when + dur)
+  const o2 = ctx.createOscillator()
+  const g2 = ctx.createGain()
+  o2.type = 'sine'
+  o2.frequency.setValueAtTime(freq * 4, when) // woody overtone
+  g2.gain.value = 0.18
+  o2.connect(g2).connect(g)
+  o2.start(when)
+  o2.stop(when + dur)
+}
+
+// Bells: FM synthesis with an inharmonic ratio and a decaying mod index.
+const bellNote: NoteFn = (ctx, out, when, freq, dur = 1.2) => {
+  const g = ctx.createGain()
+  g.gain.setValueAtTime(0.0001, when)
+  g.gain.exponentialRampToValueAtTime(0.8, when + 0.005)
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur)
+  g.connect(out)
+  const carrier = ctx.createOscillator()
+  carrier.type = 'sine'
+  carrier.frequency.setValueAtTime(freq, when)
+  const mod = ctx.createOscillator()
+  mod.type = 'sine'
+  mod.frequency.setValueAtTime(freq * 1.41, when) // inharmonic → metallic
+  const modGain = ctx.createGain()
+  modGain.gain.setValueAtTime(freq * 3, when)
+  modGain.gain.exponentialRampToValueAtTime(freq * 0.1, when + dur)
+  mod.connect(modGain).connect(carrier.frequency)
+  carrier.connect(g)
+  mod.start(when)
+  carrier.start(when)
+  mod.stop(when + dur + 0.02)
+  carrier.stop(when + dur + 0.02)
+}
+
+const marimba = pianoVoice(marimbaNote)
+const bells = pianoVoice(bellNote)
+
+// Chiptune: retro square-wave blips with an arpeggiated "go".
+function chipBlip(ctx: AudioContext, out: GainNode, when: number, freq: number, dur = 0.11) {
+  const o = ctx.createOscillator()
+  const g = ctx.createGain()
+  o.type = 'square'
+  o.frequency.setValueAtTime(freq, when)
+  g.gain.setValueAtTime(0.0001, when)
+  g.gain.exponentialRampToValueAtTime(0.5, when + 0.005)
+  g.gain.setValueAtTime(0.5, when + Math.max(0.02, dur - 0.02))
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur)
+  o.connect(g).connect(out)
+  o.start(when)
+  o.stop(when + dur + 0.02)
+}
+
+const chiptune: ThemeVoice = {
+  play(ctx, out, kind, when) {
+    switch (kind) {
+      case 'tick':
+        chipBlip(ctx, out, when, 660, 0.08)
+        break
+      case 'go': // fast ascending arpeggio
+        chipBlip(ctx, out, when, 523, 0.08)
+        chipBlip(ctx, out, when + 0.09, 659, 0.08)
+        chipBlip(ctx, out, when + 0.18, 784, 0.08)
+        chipBlip(ctx, out, when + 0.27, 1047, 0.2)
+        break
+      case 'rest':
+        chipBlip(ctx, out, when, 392, 0.14)
+        break
+      case 'done':
+        chipBlip(ctx, out, when, 784, 0.09)
+        chipBlip(ctx, out, when + 0.1, 1047, 0.09)
+        chipBlip(ctx, out, when + 0.2, 1319, 0.24)
+        break
+    }
+  },
+}
+
+// Cow: a synthesized "moo" — sawtooth with a pitch contour through vocal
+// formants, plus gentle vibrato.
+function moo(ctx: AudioContext, out: GainNode, when: number, base: number, dur = 0.6) {
+  const o = ctx.createOscillator()
+  o.type = 'sawtooth'
+  o.frequency.setValueAtTime(base * 0.9, when)
+  o.frequency.linearRampToValueAtTime(base * 1.06, when + dur * 0.25)
+  o.frequency.linearRampToValueAtTime(base * 0.8, when + dur)
+  const g = ctx.createGain()
+  g.gain.setValueAtTime(0.0001, when)
+  g.gain.exponentialRampToValueAtTime(0.9, when + 0.05)
+  g.gain.setValueAtTime(0.9, when + Math.max(0.06, dur - 0.12))
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur)
+  g.connect(out)
+  for (const [f, q] of [
+    [520, 4],
+    [1000, 6],
+  ] as [number, number][]) {
+    const bp = ctx.createBiquadFilter()
+    bp.type = 'bandpass'
+    bp.frequency.value = f
+    bp.Q.value = q
+    o.connect(bp).connect(g)
+  }
+  const lfo = ctx.createOscillator()
+  const lfoG = ctx.createGain()
+  lfo.frequency.value = 6
+  lfoG.gain.value = base * 0.03
+  lfo.connect(lfoG).connect(o.frequency)
+  lfo.start(when)
+  lfo.stop(when + dur)
+  o.start(when)
+  o.stop(when + dur + 0.05)
+}
+
+const cow: ThemeVoice = {
+  play(ctx, out, kind, when) {
+    switch (kind) {
+      case 'tick':
+        moo(ctx, out, when, 170, 0.24)
+        break
+      case 'go':
+        moo(ctx, out, when, 185, 0.75)
+        break
+      case 'rest':
+        moo(ctx, out, when, 130, 0.5)
+        break
+      case 'done':
+        moo(ctx, out, when, 175, 0.4)
+        moo(ctx, out, when + 0.5, 210, 0.7)
+        break
+    }
+  },
+}
+
+// Bird: bright sine chirps that sweep in pitch.
+function chirp(ctx: AudioContext, out: GainNode, when: number, f0: number, f1: number, dur = 0.11) {
+  const o = ctx.createOscillator()
+  const g = ctx.createGain()
+  o.type = 'sine'
+  o.frequency.setValueAtTime(f0, when)
+  o.frequency.exponentialRampToValueAtTime(f1, when + dur)
+  g.gain.setValueAtTime(0.0001, when)
+  g.gain.exponentialRampToValueAtTime(0.6, when + 0.01)
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur)
+  o.connect(g).connect(out)
+  o.start(when)
+  o.stop(when + dur + 0.02)
+}
+
+const bird: ThemeVoice = {
+  play(ctx, out, kind, when) {
+    switch (kind) {
+      case 'tick':
+        chirp(ctx, out, when, 2100, 2700, 0.08)
+        break
+      case 'go': // excited ascending trill
+        chirp(ctx, out, when, 2000, 2900, 0.07)
+        chirp(ctx, out, when + 0.08, 2500, 3400, 0.07)
+        chirp(ctx, out, when + 0.16, 3000, 4000, 0.14)
+        break
+      case 'rest': // soft descending two-note
+        chirp(ctx, out, when, 2600, 2100, 0.1)
+        chirp(ctx, out, when + 0.13, 2200, 1750, 0.16)
+        break
+      case 'done':
+        chirp(ctx, out, when, 2400, 3200, 0.07)
+        chirp(ctx, out, when + 0.09, 2900, 3700, 0.07)
+        chirp(ctx, out, when + 0.18, 3300, 4200, 0.22)
+        break
+    }
+  },
+}
 
 // Synthesized "duck" placeholder: a pitch-swept sawtooth through a bandpass
 // gives a nasal quack. (Real recorded quacks can be swapped in later.)
@@ -360,8 +544,13 @@ const duck: ThemeVoice = {
 const THEMES: Record<SoundTheme, ThemeVoice> = {
   beeps,
   piano,
-  'piano-bright': pianoBright,
   'piano-warm': pianoWarm,
+  'piano-bright': pianoBright,
+  marimba,
+  bells,
+  chiptune,
+  cow,
+  bird,
   duck,
 }
 
