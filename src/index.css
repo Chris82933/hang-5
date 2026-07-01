@@ -1,46 +1,63 @@
 :root {
-  /* Light palette — Material baseline from the reference image */
-  --primary: #6200ee;
+  /* ---- Light neumorphism ---- */
+  --primary: #6d28f0;
   --primary-variant: #3700b3;
-  --secondary: #03dac6;
+  --secondary: #039e8e;
   --secondary-variant: #018786;
-  --background: #ffffff;
-  --surface: #f4f4f6;
-  --surface-2: #ffffff;
-  --error: #b00020;
-  --on-primary: #ffffff;
-  --on-secondary: #000000;
-  --on-background: #000000;
-  --on-surface: #000000;
-  --on-error: #ffffff;
-  --muted: #5f5f6b;
-  --border: #e2e2e8;
 
-  --radius: 16px;
-  --radius-sm: 10px;
-  --nav-h: 64px;
+  /* neumorphism uses one base colour for bg + elements */
+  --background: #e6e9ef;
+  --surface: #e6e9ef;
+  --surface-2: #e6e9ef;
+
+  /* dual light/dark shadows create the soft extruded look */
+  --sh-light: #ffffff;
+  --sh-dark: #bcc2ce;
+
+  --error: #c62828;
+  --on-primary: #ffffff;
+  --on-secondary: #ffffff;
+  --on-background: #33383f;
+  --on-surface: #33383f;
+  --on-error: #ffffff;
+  --muted: #838a96;
+  --divider: rgba(120, 130, 150, 0.16);
+
+  --radius: 22px;
+  --radius-sm: 14px;
+  --nav-h: 68px;
   --maxw: 520px;
+
+  --nm-raised: -6px -6px 12px var(--sh-light), 6px 6px 12px var(--sh-dark);
+  --nm-raised-sm: -4px -4px 8px var(--sh-light), 4px 4px 8px var(--sh-dark);
+  --nm-inset: inset -4px -4px 8px var(--sh-light), inset 4px 4px 8px var(--sh-dark);
+  --nm-inset-sm: inset -2px -2px 5px var(--sh-light), inset 3px 3px 6px var(--sh-dark);
 
   color-scheme: light;
 }
 
 :root[data-theme='dark'] {
-  /* Dark palette — derived from the same hues (default) */
+  /* ---- Dark neumorphism (default) ---- */
   --primary: #bb86fc;
   --primary-variant: #9a67ea;
   --secondary: #03dac6;
   --secondary-variant: #03dac6;
-  --background: #121212;
-  --surface: #1e1e1e;
-  --surface-2: #262626;
+
+  --background: #23262d;
+  --surface: #23262d;
+  --surface-2: #23262d;
+
+  --sh-light: #2b2f38;
+  --sh-dark: #1a1c21;
+
   --error: #cf6679;
-  --on-primary: #000000;
-  --on-secondary: #000000;
-  --on-background: #ffffff;
-  --on-surface: #ffffff;
-  --on-error: #000000;
-  --muted: #a9a9b3;
-  --border: #2e2e2e;
+  --on-primary: #1a1030;
+  --on-secondary: #00201d;
+  --on-background: #e7e9ee;
+  --on-surface: #e7e9ee;
+  --on-error: #2a0d13;
+  --muted: #9aa0ac;
+  --divider: rgba(255, 255, 255, 0.06);
 
   color-scheme: dark;
 }

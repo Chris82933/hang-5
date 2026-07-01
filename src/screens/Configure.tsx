@@ -5,6 +5,7 @@ import { resolveProgram } from '../data/programs'
 import { saveProgram } from '../data/db'
 import { useActive } from '../store/active'
 import { Field, Stepper, Segmented } from '../components/ui'
+import { WeightedConfig } from '../components/WeightedConfig'
 import { fmtDuration } from '../lib/format'
 import { totalDurationSecs, totalHangSecs } from '../engine/segments'
 
@@ -93,6 +94,8 @@ export default function Configure() {
           <Stepper value={p.restBetweenSetsSecs} min={0} max={600} step={15} suffix="s" onChange={(v) => setP({ restBetweenSetsSecs: v })} />
         </Field>
       </div>
+
+      <WeightedConfig params={p} patch={setP} />
 
       <div className="section-label">Grip</div>
       <div className="card">

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { EdgeType, HandPosition, Program } from '../types'
 import { db, saveProgram, deleteProgram } from '../data/db'
 import { Field, Stepper, Segmented } from '../components/ui'
+import { WeightedConfig } from '../components/WeightedConfig'
 
 const EDGE_TYPES: { value: EdgeType; label: string }[] = [
   { value: 'wood', label: 'Wood' },
@@ -116,6 +117,8 @@ export default function Editor() {
           <Stepper value={p.restBetweenSetsSecs} min={0} max={600} step={15} suffix="s" onChange={(v) => setP({ restBetweenSetsSecs: v })} />
         </Field>
       </div>
+
+      <WeightedConfig params={p} patch={setP} />
 
       <div className="section-label">Grip</div>
       <div className="card">

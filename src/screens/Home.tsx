@@ -13,6 +13,7 @@ function ProgramCard({ program, onClick }: { program: Program; onClick: () => vo
       <p>{program.description}</p>
       <div className="chips">
         <span className="chip accent">{programSummary(program)}</span>
+        {program.params.weighted && <span className="chip accent">⚖ Weighted</span>}
       </div>
       <div className="chips">
         <span className="chip">{gripSummary(program.grip)}</span>

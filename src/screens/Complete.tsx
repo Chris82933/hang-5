@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useActive } from '../store/active'
 import { saveSession } from '../data/db'
-import { fmtDuration, gripSummary } from '../lib/format'
+import { Field, Stepper } from '../components/ui'
+import { fmtDuration, fmtWeight, gripSummary } from '../lib/format'
 
 export default function Complete() {
   const nav = useNavigate()
   const log = useActive((s) => s.lastLog)
   const [rpe, setRpe] = useState<number | undefined>(undefined)
   const [notes, setNotes] = useState('')
+  const [topWeight, setTopWeight] = useState(log?.topWeight ?? 0)
 
   useEffect(() => {
     if (!log) nav('/', { replace: true })
@@ -17,7 +19,12 @@ export default function Complete() {
   if (!log) return null
 
   const save = async () => {
-    await saveSession({ ...log, rpe, notes: notes.trim() || undefined })
+    await saveSession({
+      ...log,
+      rpe,
+      notes: notes.trim() || undefined,
+      topWeight: log.weighted ? topWeight : log.topWeight,
+    })
     nav('/history', { replace: true })
   }
 
@@ -45,9 +52,33 @@ export default function Complete() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 12, color: 'var(--muted)', fontSize: 13 }}>
+      <div className="card" style={{ marginTop: 16, color: 'var(--muted)', fontSize: 13 }}>
         {gripSummary(log.grip)}
       </div>
+
+      {log.weighted && (
+        <>
+          <div className="section-label">Top weight lifted</div>
+          <div className="card">
+            <Field
+              label="Heaviest set"
+              hint={`Tracked on your max-weight chart (${log.weightUnit ?? 'kg'})`}
+            >
+              <Stepper
+                value={topWeight}
+                min={-40}
+                max={200}
+                step={2.5}
+                suffix={log.weightUnit ?? 'kg'}
+                onChange={setTopWeight}
+              />
+            </Field>
+            <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12, paddingTop: 10 }}>
+              {fmtWeight(topWeight, log.weightUnit ?? 'kg')}
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="section-label">How hard did it feel? (RPE)</div>
       <div className="rpe-dots">

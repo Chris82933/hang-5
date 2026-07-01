@@ -1,4 +1,4 @@
-import type { GripConfig, HandPosition, Program } from '../types'
+import type { GripConfig, HandPosition, Program, WeightUnit } from '../types'
 import { totalDurationSecs } from '../engine/segments'
 
 const HAND_LABELS: Record<HandPosition, string> = {
@@ -29,6 +29,14 @@ export function programSummary(p: Program): string {
   const { sets, repsPerSet, hangSecs, restSecs } = p.params
   const reps = repsPerSet > 1 ? `${repsPerSet}×${hangSecs}:${restSecs}` : `${hangSecs}s hang`
   return `${sets} set${sets > 1 ? 's' : ''} · ${reps} · ~${fmtDuration(totalDurationSecs(p))}`
+}
+
+/** Format an added-weight value: bodyweight, +N, or -N (assisted). */
+export function fmtWeight(n: number, unit: WeightUnit): string {
+  const v = Math.round(n * 10) / 10
+  if (v === 0) return 'Bodyweight'
+  const sign = v > 0 ? '+' : '−'
+  return `${sign}${Math.abs(v)} ${unit}`
 }
 
 export function fmtDate(ms: number): string {

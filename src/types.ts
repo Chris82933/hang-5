@@ -32,6 +32,16 @@ export interface ProgramParams {
   hangSecs: number
   restSecs: number // rest between reps within a set
   restBetweenSetsSecs: number
+
+  /**
+   * Optional progressive loading. When enabled, each set adds weight on top of
+   * the previous — starting light to warm the tendons up and build safely.
+   * Weight is a plain number in the user's chosen unit (see settings). Negative
+   * values model assisted (removed) weight.
+   */
+  weighted?: boolean
+  startWeight?: number // added weight on the first set (0 = bodyweight)
+  weightStep?: number // added per subsequent set
 }
 
 export interface Program {
@@ -56,6 +66,8 @@ export interface Segment {
   repIndex: number // 1-based within set; 0 when N/A
   /** total reps in this set, for progress display */
   repsInSet: number
+  /** target added weight for this segment (weighted programs only) */
+  targetWeight?: number
 }
 
 // ---- Session history -------------------------------------------------------
@@ -72,4 +84,11 @@ export interface SessionLog {
   totalHangSecs: number
   rpe?: number // 1-10 perceived effort
   notes?: string
+
+  /** Weighted-session tracking. `topWeight` is the heaviest load completed. */
+  weighted?: boolean
+  topWeight?: number
+  weightUnit?: WeightUnit
 }
+
+export type WeightUnit = 'kg' | 'lb'

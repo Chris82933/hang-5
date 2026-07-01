@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+import type { WeightUnit } from '../types'
+
 export type ThemeMode = 'dark' | 'light'
 export type SoundTheme = 'beeps' | 'piano' | 'duck'
 
@@ -24,12 +26,14 @@ interface SettingsState {
   volume: number // 0..1
   keepAwake: boolean
   cueColors: CueColors
+  weightUnit: WeightUnit
   setThemeMode: (m: ThemeMode) => void
   setSoundTheme: (s: SoundTheme) => void
   setVolume: (v: number) => void
   setKeepAwake: (b: boolean) => void
   setCueColor: (key: keyof CueColors, color: string) => void
   resetCueColors: () => void
+  setWeightUnit: (u: WeightUnit) => void
 }
 
 export const useSettings = create<SettingsState>()(
@@ -40,6 +44,7 @@ export const useSettings = create<SettingsState>()(
       volume: 0.8,
       keepAwake: true,
       cueColors: DEFAULT_CUE_COLORS,
+      weightUnit: 'kg',
       setThemeMode: (themeMode) => set({ themeMode }),
       setSoundTheme: (soundTheme) => set({ soundTheme }),
       setVolume: (volume) => set({ volume }),
@@ -47,6 +52,7 @@ export const useSettings = create<SettingsState>()(
       setCueColor: (key, color) =>
         set((s) => ({ cueColors: { ...s.cueColors, [key]: color } })),
       resetCueColors: () => set({ cueColors: DEFAULT_CUE_COLORS }),
+      setWeightUnit: (weightUnit) => set({ weightUnit }),
     }),
     { name: 'hangboard-settings' },
   ),

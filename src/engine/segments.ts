@@ -1,4 +1,16 @@
-import type { Program, Segment } from '../types'
+import type { Program, ProgramParams, Segment } from '../types'
+
+/** Added weight prescribed for a given set (1-based) of a weighted program. */
+export function setWeight(p: ProgramParams, set: number): number {
+  const start = p.startWeight ?? 0
+  const step = p.weightStep ?? 0
+  return start + (set - 1) * step
+}
+
+/** The heaviest set a weighted program builds up to. */
+export function topWeight(p: ProgramParams): number {
+  return setWeight(p, Math.max(1, p.sets))
+}
 
 /**
  * Expand a program's interval parameters into a flat timeline of segments.
@@ -35,6 +47,7 @@ export function buildSegments(program: Program): Segment[] {
         setIndex: set,
         repIndex: rep,
         repsInSet: p.repsPerSet,
+        targetWeight: p.weighted ? setWeight(p, set) : undefined,
       })
 
       const isLastRepOfSet = rep === p.repsPerSet

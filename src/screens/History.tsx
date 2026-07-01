@@ -10,7 +10,7 @@ import {
 } from 'recharts'
 import type { SessionLog } from '../types'
 import { getSessions, deleteSession } from '../data/db'
-import { fmtDate, fmtDuration, gripSummary } from '../lib/format'
+import { fmtDate, fmtDuration, fmtWeight, gripSummary } from '../lib/format'
 
 export default function History() {
   const [sessions, setSessions] = useState<SessionLog[]>([])
@@ -42,6 +42,14 @@ export default function History() {
 
   const totalSessions = sessions.length
   const totalHang = sessions.reduce((a, s) => a + s.totalHangSecs, 0)
+
+  // max-weight progression from weighted sessions (oldest → newest)
+  const weightData = [...sessions]
+    .filter((s) => s.weighted && s.topWeight != null)
+    .reverse()
+    .map((s) => ({ label: fmtDate(s.date), weight: s.topWeight as number }))
+  const weightUnitLabel = sessions.find((s) => s.weighted)?.weightUnit ?? 'kg'
+  const bestWeight = weightData.reduce((m, d) => Math.max(m, d.weight), 0)
 
   return (
     <div className="page">
@@ -77,13 +85,13 @@ export default function History() {
           <div className="card" style={{ height: 220, padding: '16px 8px 8px 0' }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 6, right: 16, bottom: 0, left: -18 }}>
-                <CartesianGrid stroke="var(--border)" vertical={false} />
+                <CartesianGrid stroke="var(--divider)" vertical={false} />
                 <XAxis dataKey="label" tick={{ fill: 'var(--muted)', fontSize: 10 }} tickLine={false} />
                 <YAxis tick={{ fill: 'var(--muted)', fontSize: 10 }} tickLine={false} axisLine={false} unit="s" />
                 <Tooltip
                   contentStyle={{
-                    background: 'var(--surface-2)',
-                    border: '1px solid var(--border)',
+                    background: 'var(--surface)',
+                    border: 'none',
                     borderRadius: 10,
                     color: 'var(--on-surface)',
                   }}
@@ -100,6 +108,44 @@ export default function History() {
             </ResponsiveContainer>
           </div>
 
+          {weightData.length > 0 && (
+            <>
+              <div className="section-label">
+                Max weight progression · best {fmtWeight(bestWeight, weightUnitLabel)}
+              </div>
+              <div className="card" style={{ height: 220, padding: '16px 8px 8px 0' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={weightData} margin={{ top: 6, right: 16, bottom: 0, left: -18 }}>
+                    <CartesianGrid stroke="var(--divider)" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fill: 'var(--muted)', fontSize: 10 }} tickLine={false} />
+                    <YAxis
+                      tick={{ fill: 'var(--muted)', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      unit={weightUnitLabel}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: 'var(--surface)',
+                        border: 'none',
+                        borderRadius: 10,
+                        color: 'var(--on-surface)',
+                      }}
+                      formatter={(v) => [`${v} ${weightUnitLabel}`, 'Top weight']}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="weight"
+                      stroke="var(--secondary)"
+                      strokeWidth={3}
+                      dot={{ r: 3, fill: 'var(--secondary)' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          )}
+
           <div className="section-label">Sessions</div>
           {sessions.map((s) => (
             <div className="card" key={s.id}>
@@ -115,6 +161,9 @@ export default function History() {
               <div className="chips" style={{ marginTop: 10 }}>
                 <span className="chip">{s.completedReps} reps</span>
                 <span className="chip">{fmtDuration(s.totalHangSecs)} on</span>
+                {s.weighted && s.topWeight != null && (
+                  <span className="chip accent">{fmtWeight(s.topWeight, s.weightUnit ?? 'kg')}</span>
+                )}
                 {s.rpe != null && <span className="chip accent">RPE {s.rpe}</span>}
               </div>
               <div className="chips">

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useActive } from '../store/active'
 import { useSettings } from '../store/settings'
 import { useWorkout } from '../engine/useWorkout'
+import { fmtWeight } from '../lib/format'
 import type { SegmentType } from '../types'
 
 export default function Workout() {
@@ -10,6 +11,7 @@ export default function Workout() {
   const program = useActive((s) => s.program)
   const setLastLog = useActive((s) => s.setLastLog)
   const cueColors = useSettings((s) => s.cueColors)
+  const weightUnit = useSettings((s) => s.weightUnit)
   const started = useRef(false)
   const saved = useRef(false)
 
@@ -42,6 +44,9 @@ export default function Workout() {
         completedSets: s.completedSets,
         completedReps: s.completedReps,
         totalHangSecs: s.totalHangSecs,
+        weighted: program.params.weighted,
+        topWeight: s.topWeight,
+        weightUnit,
       })
       nav('/complete', { replace: true })
     }
@@ -68,8 +73,6 @@ export default function Workout() {
     nav('/', { replace: true })
   }
 
-  const isRest = state.segType === 'rest' || state.segType === 'rest-set'
-
   return (
     <div className="workout" style={{ backgroundColor: colorFor(state.segType) }}>
       <div className="top">
@@ -85,31 +88,30 @@ export default function Workout() {
       <div className="center">
         <div className="phase">{state.label}</div>
         <div className="count">{state.secondsRemaining}</div>
-        {state.repsInSet > 1 && !isRest && state.segType === 'hang' && (
+        {state.segType === 'hang' && state.repsInSet > 1 && (
           <div className="setrep">
             Rep {state.repIndex} of {state.repsInSet}
           </div>
+        )}
+        {state.segType === 'hang' && state.targetWeight != null && (
+          <div className="weight-badge">{fmtWeight(state.targetWeight, weightUnit)}</div>
         )}
         {state.status === 'paused' && <div className="setrep">Paused</div>}
       </div>
 
       <div className="controls">
-        <button onClick={skipPrev} aria-label="previous">
+        <button onClick={skipPrev} aria-label="previous segment">
           ⏮
         </button>
         {state.status === 'running' ? (
-          <button className="wide" onClick={pause}>
-            Pause
-          </button>
+          <button onClick={pause}>Pause</button>
         ) : (
-          <button className="wide" onClick={() => void resume()}>
-            Resume
-          </button>
+          <button onClick={() => void resume()}>Resume</button>
         )}
-        <button onClick={skipNext} aria-label="next">
-          ⏭
+        <button className="wide" onClick={skipNext}>
+          Skip ⏭
         </button>
-        <button onClick={quit} aria-label="stop">
+        <button onClick={quit} aria-label="stop workout">
           ✕
         </button>
       </div>

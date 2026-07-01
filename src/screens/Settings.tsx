@@ -1,6 +1,7 @@
 import { useSettings, type SoundTheme, type ThemeMode } from '../store/settings'
 import { soundEngine } from '../engine/audio'
 import { Field, Toggle, Segmented } from '../components/ui'
+import type { WeightUnit } from '../types'
 
 const SOUND_THEMES: { value: SoundTheme; label: string }[] = [
   { value: 'beeps', label: '🔔 Beeps' },
@@ -75,6 +76,16 @@ export default function Settings() {
           <Toggle on={s.keepAwake} onChange={s.setKeepAwake} />
         </Field>
       </div>
+
+      <div className="section-label">Weight unit</div>
+      <Segmented<WeightUnit>
+        value={s.weightUnit}
+        options={[
+          { value: 'kg', label: 'Kilograms' },
+          { value: 'lb', label: 'Pounds' },
+        ]}
+        onChange={s.setWeightUnit}
+      />
 
       <div className="section-label">Workout cue colours</div>
       <div className="card">

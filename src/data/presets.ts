@@ -84,6 +84,46 @@ export const PRESET_PROGRAMS: Program[] = [
     },
   },
   {
+    id: 'weighted-max-hangs',
+    name: 'Weighted Max Hangs',
+    kind: 'max-hang',
+    description:
+      'Progressive load: 8 sets of 10s hangs starting at bodyweight and adding weight each set to build safely.',
+    builtIn: true,
+    grip: maxHangGrip,
+    params: {
+      prepSecs: 15,
+      sets: 8,
+      repsPerSet: 1,
+      hangSecs: 10,
+      restSecs: 0,
+      restBetweenSetsSecs: 180,
+      weighted: true,
+      startWeight: 0, // first two sets are warm-up at bodyweight
+      weightStep: 5,
+    },
+  },
+  {
+    id: 'weighted-repeaters-7-3',
+    name: 'Weighted 7:3 Repeaters',
+    kind: 'repeaters',
+    description:
+      'Strength-endurance with a warm-up ramp: 5 sets of 6×7:3, adding weight each set from bodyweight.',
+    builtIn: true,
+    grip: defaultGrip,
+    params: {
+      prepSecs: 15,
+      sets: 5,
+      repsPerSet: 6,
+      hangSecs: 7,
+      restSecs: 3,
+      restBetweenSetsSecs: 180,
+      weighted: true,
+      startWeight: 0,
+      weightStep: 2.5,
+    },
+  },
+  {
     id: 'frequency-hangs',
     name: 'Frequency Hangs',
     kind: 'repeaters',
