@@ -4,9 +4,11 @@ import { Field, Toggle, Segmented, Stepper } from '../components/ui'
 import type { WeightUnit } from '../types'
 
 const SOUND_THEMES: { value: SoundTheme; label: string }[] = [
-  { value: 'beeps', label: '🔔 Beeps' },
-  { value: 'piano', label: '🎹 Piano' },
-  { value: 'duck', label: '🦆 Duck' },
+  { value: 'beeps', label: 'Beeps' },
+  { value: 'piano', label: 'Piano' },
+  { value: 'piano-warm', label: 'Warm piano' },
+  { value: 'piano-bright', label: 'Bright piano' },
+  { value: 'duck', label: 'Duck' },
 ]
 
 const CUE_KEYS: { key: 'prep' | 'hang' | 'rest' | 'switch' | 'done'; label: string }[] = [

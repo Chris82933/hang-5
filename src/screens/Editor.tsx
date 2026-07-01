@@ -1,25 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { EdgeType, HandPosition, Program } from '../types'
+import type { Program } from '../types'
 import { db, saveProgram, deleteProgram } from '../data/db'
 import { Field, Stepper, Segmented } from '../components/ui'
 import { WeightedConfig } from '../components/WeightedConfig'
-
-const EDGE_TYPES: { value: EdgeType; label: string }[] = [
-  { value: 'wood', label: 'Wood' },
-  { value: 'metal', label: 'Metal' },
-  { value: 'textured', label: 'Textured' },
-  { value: 'pocket', label: 'Pocket' },
-]
-
-const HAND_POSITIONS: { value: HandPosition; label: string }[] = [
-  { value: 'half-crimp', label: 'Half crimp' },
-  { value: 'full-crimp', label: 'Full crimp' },
-  { value: 'open-hand', label: 'Open hand' },
-  { value: 'drag', label: 'Drag' },
-  { value: 'sloper', label: 'Sloper' },
-  { value: 'pinch', label: 'Pinch' },
-]
+import { EDGE_TYPES, HAND_POSITIONS } from '../lib/gripOptions'
 
 function blankProgram(): Program {
   return {
@@ -120,13 +105,20 @@ export default function Editor() {
 
       <WeightedConfig params={p} patch={setP} />
 
+      <div className="section-label">Hand mode</div>
+      <Segmented<'two' | 'one'>
+        value={p.unilateral ? 'one' : 'two'}
+        options={[
+          { value: 'two', label: 'Two-handed hangs' },
+          { value: 'one', label: 'One-handed lifts' },
+        ]}
+        onChange={(v) => setP({ unilateral: v === 'one' })}
+      />
+
       <div className="section-label">Grip</div>
       <div className="card">
         <Field label="Edge size">
           <Stepper value={prog.grip.edgeSizeMm} min={2} max={60} suffix="mm" onChange={(v) => setGrip({ edgeSizeMm: v })} />
-        </Field>
-        <Field label="Fingers">
-          <Stepper value={prog.grip.fingers} min={1} max={4} onChange={(v) => setGrip({ fingers: v })} />
         </Field>
       </div>
       <div className="section-label">Edge type</div>

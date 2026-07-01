@@ -59,8 +59,10 @@ const beeps: ThemeVoice = {
   },
 }
 
-// A softer, enveloped voice that reads as "piano-ish": triangle + long decay.
-function pianoNote(ctx: AudioContext, out: GainNode, when: number, freq: number, dur = 0.7) {
+type NoteFn = (ctx: AudioContext, out: GainNode, when: number, freq: number, dur?: number) => void
+
+// Classic: single triangle with a long decay — balanced and mellow.
+const classicNote: NoteFn = (ctx, out, when, freq, dur = 0.7) => {
   const osc = ctx.createOscillator()
   const g = ctx.createGain()
   osc.type = 'triangle'
@@ -73,29 +75,89 @@ function pianoNote(ctx: AudioContext, out: GainNode, when: number, freq: number,
   osc.stop(when + dur + 0.02)
 }
 
-const piano: ThemeVoice = {
-  play(ctx, out, kind, when) {
-    switch (kind) {
-      case 'tick':
-        pianoNote(ctx, out, when, 392, 0.35) // G4
-        break
-      case 'go':
-        // bright ascending triad — clear "go" signal
-        pianoNote(ctx, out, when, 523, 0.9) // C5
-        pianoNote(ctx, out, when, 659, 0.9) // E5
-        pianoNote(ctx, out, when, 784, 0.9) // G5
-        break
-      case 'rest':
-        pianoNote(ctx, out, when, 330, 0.8) // E4 — settle down
-        break
-      case 'done':
-        pianoNote(ctx, out, when, 523, 0.5)
-        pianoNote(ctx, out, when + 0.2, 659, 0.5)
-        pianoNote(ctx, out, when + 0.4, 784, 0.9)
-        break
-    }
-  },
+// Bright: sawtooth + a square octave partial, hard attack — sharp and cutting.
+const brightNote: NoteFn = (ctx, out, when, freq, dur = 0.55) => {
+  const g = ctx.createGain()
+  g.gain.setValueAtTime(0.0001, when)
+  g.gain.exponentialRampToValueAtTime(0.85, when + 0.004)
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur)
+  g.connect(out)
+  const o1 = ctx.createOscillator()
+  o1.type = 'sawtooth'
+  o1.frequency.setValueAtTime(freq, when)
+  o1.connect(g)
+  o1.start(when)
+  o1.stop(when + dur + 0.02)
+  const o2 = ctx.createOscillator()
+  const g2 = ctx.createGain()
+  o2.type = 'square'
+  o2.frequency.setValueAtTime(freq * 2, when)
+  g2.gain.value = 0.3
+  o2.connect(g2).connect(g)
+  o2.start(when)
+  o2.stop(when + dur + 0.02)
 }
+
+// Warm: two slightly-detuned triangles + a sine sub through a lowpass — soft
+// and friendly.
+const warmNote: NoteFn = (ctx, out, when, freq, dur = 1) => {
+  const g = ctx.createGain()
+  const lp = ctx.createBiquadFilter()
+  lp.type = 'lowpass'
+  lp.frequency.value = 1500
+  g.gain.setValueAtTime(0.0001, when)
+  g.gain.exponentialRampToValueAtTime(0.8, when + 0.03)
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur)
+  g.connect(lp).connect(out)
+  for (const detune of [-6, 6]) {
+    const o = ctx.createOscillator()
+    o.type = 'triangle'
+    o.frequency.setValueAtTime(freq, when)
+    o.detune.value = detune
+    o.connect(g)
+    o.start(when)
+    o.stop(when + dur + 0.03)
+  }
+  const sub = ctx.createOscillator()
+  const sg = ctx.createGain()
+  sub.type = 'sine'
+  sub.frequency.setValueAtTime(freq, when)
+  sg.gain.value = 0.5
+  sub.connect(sg).connect(g)
+  sub.start(when)
+  sub.stop(when + dur + 0.03)
+}
+
+// All piano variants share the same musical cues; only the note timbre differs.
+function pianoVoice(note: NoteFn): ThemeVoice {
+  return {
+    play(ctx, out, kind, when) {
+      switch (kind) {
+        case 'tick':
+          note(ctx, out, when, 392, 0.35) // G4
+          break
+        case 'go':
+          // ascending triad — clear "go" signal
+          note(ctx, out, when, 523, 0.9) // C5
+          note(ctx, out, when, 659, 0.9) // E5
+          note(ctx, out, when, 784, 0.9) // G5
+          break
+        case 'rest':
+          note(ctx, out, when, 330, 0.8) // E4 — settle down
+          break
+        case 'done':
+          note(ctx, out, when, 523, 0.5)
+          note(ctx, out, when + 0.2, 659, 0.5)
+          note(ctx, out, when + 0.4, 784, 0.9)
+          break
+      }
+    },
+  }
+}
+
+const piano = pianoVoice(classicNote)
+const pianoBright = pianoVoice(brightNote)
+const pianoWarm = pianoVoice(warmNote)
 
 // Synthesized "duck" placeholder: a pitch-swept sawtooth through a bandpass
 // gives a nasal quack. (Real recorded quacks can be swapped in later.)
@@ -265,7 +327,13 @@ const duck: ThemeVoice = {
   },
 }
 
-const THEMES: Record<SoundTheme, ThemeVoice> = { beeps, piano, duck }
+const THEMES: Record<SoundTheme, ThemeVoice> = {
+  beeps,
+  piano,
+  'piano-bright': pianoBright,
+  'piano-warm': pianoWarm,
+  duck,
+}
 
 // ---- engine ----------------------------------------------------------------
 

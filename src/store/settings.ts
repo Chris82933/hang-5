@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware'
 import type { WeightUnit } from '../types'
 
 export type ThemeMode = 'dark' | 'light'
-export type SoundTheme = 'beeps' | 'piano' | 'duck'
+export type SoundTheme = 'beeps' | 'piano' | 'piano-bright' | 'piano-warm' | 'duck'
 
 export interface CueColors {
   prep: string
@@ -46,7 +46,7 @@ interface SettingsState {
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
-      themeMode: 'dark', // default to dark per spec
+      themeMode: 'light', // default appearance
       soundTheme: 'piano',
       volume: 0.8,
       keepAwake: true,

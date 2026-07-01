@@ -8,6 +8,11 @@ const HAND_LABELS: Record<HandPosition, string> = {
   'open-hand': 'Open hand',
   sloper: 'Sloper',
   pinch: 'Pinch',
+  'front-3': 'Front 3',
+  'back-3': 'Back 3',
+  'front-2': 'Front 2',
+  'back-2': 'Back 2',
+  'middle-2': 'Middle 2',
 }
 
 export function handLabel(h: HandPosition): string {
@@ -15,7 +20,7 @@ export function handLabel(h: HandPosition): string {
 }
 
 export function gripSummary(g: GripConfig): string {
-  return `${g.edgeSizeMm}mm ${g.edgeType} · ${g.fingers}f · ${HAND_LABELS[g.handPosition]}`
+  return `${g.edgeSizeMm}mm ${g.edgeType} · ${HAND_LABELS[g.handPosition]}`
 }
 
 export function fmtDuration(secs: number): string {

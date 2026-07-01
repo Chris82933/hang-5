@@ -62,48 +62,52 @@
   box-shadow: var(--hard);
 }
 .card + .card {
-  margin-top: 18px;
+  margin-top: 14px;
 }
 .program-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   text-align: left;
   width: 100%;
   position: relative;
+  padding: 13px 15px;
+  overflow: hidden;
 }
-/* Bauhaus corner block */
+/* Bauhaus accent stripe down the left edge */
 .program-card::before {
   content: '';
   position: absolute;
   top: 0;
-  right: 0;
-  width: 26px;
-  height: 26px;
+  left: 0;
+  bottom: 0;
+  width: 8px;
   background: var(--accent-yellow);
-  border-left: var(--bw) solid var(--border-col);
-  border-bottom: var(--bw) solid var(--border-col);
+  border-right: var(--bw) solid var(--border-col);
+}
+.program-card > * {
+  padding-left: 8px;
 }
 .program-card:active {
   box-shadow: none;
   transform: translate(4px, 4px);
 }
-.program-card .title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
 .program-card h3 {
   margin: 0;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 800;
   text-transform: uppercase;
+  line-height: 1.1;
 }
-.program-card p {
-  margin: 0;
+.program-card .prog-summary {
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.program-card .chips {
+  margin-top: 6px;
 }
 .chips {
   display: flex;
@@ -361,13 +365,14 @@
   z-index: 50;
 }
 .workout .top {
-  padding: calc(env(safe-area-inset-top) + 16px) 22px 0;
+  padding: calc(env(safe-area-inset-top) + 16px) 22px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  border-bottom: 3px solid #111;
 }
 .workout .center {
   flex: 1;
@@ -376,30 +381,34 @@
   align-items: center;
   justify-content: center;
 }
+/* typographic black block — a signature Bauhaus device */
 .workout .phase {
-  font-size: 36px;
+  font-size: 34px;
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
+  background: #111;
+  color: #fff;
+  padding: 6px 20px;
+  border: 3px solid #111;
 }
 .workout .count {
-  font-size: 156px;
+  font-size: 168px;
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  margin: 4px 0;
+  margin: 10px 0 4px;
 }
 .workout .setrep {
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 .workout .weight-badge {
-  margin-top: 14px;
-  padding: 8px 18px;
-  border-radius: 3px;
-  background: #fff;
+  margin-top: 16px;
+  padding: 8px 20px;
+  background: var(--accent-yellow);
   color: #111;
   font-size: 20px;
   font-weight: 800;
@@ -408,37 +417,41 @@
 .workout .controls {
   display: flex;
   gap: 12px;
-  padding: 20px 20px calc(env(safe-area-inset-bottom) + 24px);
+  padding: 18px 20px calc(env(safe-area-inset-bottom) + 22px);
+  border-top: 3px solid #111;
 }
 .workout .controls button {
   flex: 1;
   padding: 18px 6px;
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
   font-weight: 800;
   text-transform: uppercase;
   font-size: 14px;
   letter-spacing: 0.5px;
-  border: 2.5px solid #fff;
+  border: 3px solid #111;
+  box-shadow: 4px 4px 0 #111;
 }
 .workout .controls button:active {
-  background: #fff;
-  color: #111;
+  background: #111;
+  color: #fff;
+  box-shadow: none;
+  transform: translate(4px, 4px);
 }
 .workout .controls button.wide {
   flex: 1.6;
 }
 .progress-bar {
-  height: 10px;
-  background: rgba(0, 0, 0, 0.28);
-  border: 2px solid #fff;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.35);
+  border: 3px solid #111;
   margin: 16px 22px 0;
   overflow: hidden;
 }
 .progress-bar > div {
   height: 100%;
-  background: #fff;
+  background: #111;
   transition: width 0.2s linear;
 }
 
@@ -478,20 +491,25 @@
 }
 .fab {
   position: fixed;
-  right: 20px;
+  right: 18px;
   bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 18px);
-  width: 60px;
-  height: 60px;
+  padding: 13px 18px;
   border-radius: var(--radius);
   background: var(--secondary);
   color: var(--on-secondary);
-  font-size: 30px;
+  font-size: 15px;
   font-weight: 800;
-  display: grid;
-  place-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: var(--bw) solid var(--border-col);
   box-shadow: var(--hard);
-  max-width: var(--maxw);
+}
+.fab .plus {
+  font-size: 24px;
+  line-height: 1;
 }
 .fab:active {
   box-shadow: none;

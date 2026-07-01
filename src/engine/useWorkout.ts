@@ -35,8 +35,10 @@ export interface WorkoutState {
  */
 export function useWorkout(program: Program) {
   const keepAwake = useSettings((s) => s.keepAwake)
-  const unilateral = useSettings((s) => s.unilateral)
+  const globalUnilateral = useSettings((s) => s.unilateral)
   const switchSecs = useSettings((s) => s.switchSecs)
+  // a program can override the global two-handed / one-handed default
+  const unilateral = program.params.unilateral ?? globalUnilateral
 
   const segments = useRef<Segment[]>([])
   const segStart = useRef<number[]>([]) // elapsed at which each segment starts

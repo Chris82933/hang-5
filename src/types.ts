@@ -8,6 +8,12 @@ export type HandPosition =
   | 'open-hand'
   | 'sloper'
   | 'pinch'
+  // pocket / partial-finger grips
+  | 'front-3'
+  | 'back-3'
+  | 'front-2'
+  | 'back-2'
+  | 'middle-2'
 
 export interface GripConfig {
   edgeSizeMm: number
@@ -42,6 +48,12 @@ export interface ProgramParams {
   weighted?: boolean
   startWeight?: number // added weight on the first set (0 = bodyweight)
   weightStep?: number // added per subsequent set
+
+  /**
+   * Per-program hand mode: true = single-hand lifts (one hand at a time),
+   * false = two-handed hangs. When undefined, falls back to the global setting.
+   */
+  unilateral?: boolean
 }
 
 export interface Program {

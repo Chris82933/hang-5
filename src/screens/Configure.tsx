@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { EdgeType, HandPosition, Program } from '../types'
+import type { Program } from '../types'
 import { resolveProgram } from '../data/programs'
 import { saveProgram } from '../data/db'
 import { useActive } from '../store/active'
@@ -8,23 +8,8 @@ import { useSettings } from '../store/settings'
 import { Field, Stepper, Segmented } from '../components/ui'
 import { WeightedConfig } from '../components/WeightedConfig'
 import { fmtDuration } from '../lib/format'
+import { EDGE_TYPES, HAND_POSITIONS } from '../lib/gripOptions'
 import { totalDurationSecs, totalHangSecs } from '../engine/segments'
-
-const EDGE_TYPES: { value: EdgeType; label: string }[] = [
-  { value: 'wood', label: 'Wood' },
-  { value: 'metal', label: 'Metal' },
-  { value: 'textured', label: 'Textured' },
-  { value: 'pocket', label: 'Pocket' },
-]
-
-const HAND_POSITIONS: { value: HandPosition; label: string }[] = [
-  { value: 'half-crimp', label: 'Half crimp' },
-  { value: 'full-crimp', label: 'Full crimp' },
-  { value: 'open-hand', label: 'Open hand' },
-  { value: 'drag', label: 'Drag' },
-  { value: 'sloper', label: 'Sloper' },
-  { value: 'pinch', label: 'Pinch' },
-]
 
 export default function Configure() {
   const { id } = useParams()
@@ -40,7 +25,9 @@ export default function Configure() {
 
   if (!prog) return <div className="page empty">Loading…</div>
 
-  const opts = { unilateral, switchSecs }
+  // per-program hand mode wins over the global default
+  const effUnilateral = prog.params.unilateral ?? unilateral
+  const opts = { unilateral: effUnilateral, switchSecs }
 
   const p = prog.params
   const setP = (patch: Partial<typeof p>) => setProg({ ...prog, params: { ...p, ...patch } })
@@ -75,7 +62,7 @@ export default function Configure() {
           <div className="sub">
             {fmtDuration(totalDurationSecs(prog, opts))} total ·{' '}
             {fmtDuration(totalHangSecs(prog, opts))} hanging
-            {unilateral && ' · one hand at a time'}
+            {effUnilateral && ' · one hand at a time'}
           </div>
         </div>
       </div>
@@ -104,13 +91,20 @@ export default function Configure() {
 
       <WeightedConfig params={p} patch={setP} />
 
+      <div className="section-label">Hand mode</div>
+      <Segmented<'two' | 'one'>
+        value={effUnilateral ? 'one' : 'two'}
+        options={[
+          { value: 'two', label: 'Two-handed hangs' },
+          { value: 'one', label: 'One-handed lifts' },
+        ]}
+        onChange={(v) => setP({ unilateral: v === 'one' })}
+      />
+
       <div className="section-label">Grip</div>
       <div className="card">
         <Field label="Edge size">
           <Stepper value={prog.grip.edgeSizeMm} min={2} max={60} suffix="mm" onChange={(v) => setGrip({ edgeSizeMm: v })} />
-        </Field>
-        <Field label="Fingers">
-          <Stepper value={prog.grip.fingers} min={1} max={4} onChange={(v) => setGrip({ fingers: v })} />
         </Field>
       </div>
       <div className="section-label">Edge type</div>

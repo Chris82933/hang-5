@@ -6,17 +6,12 @@ import { gripSummary, programSummary } from '../lib/format'
 function ProgramCard({ program, onClick }: { program: Program; onClick: () => void }) {
   return (
     <button className="card program-card" onClick={onClick}>
-      <div className="title-row">
-        <h3>{program.name}</h3>
-        <span style={{ fontSize: 22, opacity: 0.5 }}>›</span>
-      </div>
-      <p>{program.description}</p>
-      <div className="chips">
-        <span className="chip accent">{programSummary(program)}</span>
-        {program.params.weighted && <span className="chip accent">⚖ Weighted</span>}
-      </div>
+      <h3>{program.name}</h3>
+      <div className="prog-summary">{programSummary(program)}</div>
       <div className="chips">
         <span className="chip">{gripSummary(program.grip)}</span>
+        {program.params.weighted && <span className="chip accent">Weighted</span>}
+        {program.params.unilateral && <span className="chip accent">1-hand</span>}
       </div>
     </button>
   )
@@ -51,8 +46,8 @@ export default function Home() {
         ))
       )}
 
-      <button className="fab" onClick={() => nav('/editor')} aria-label="New program">
-        ＋
+      <button className="fab" onClick={() => nav('/editor')} aria-label="Create program">
+        Create <span className="plus">+</span>
       </button>
     </div>
   )
