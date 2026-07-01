@@ -11,7 +11,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      workbox: {
+        // include audio + icons so the app works fully offline
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,mp3}'],
+      },
       manifest: {
         name: 'Hangboard Trainer',
         short_name: 'Hangboard',

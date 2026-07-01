@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# GitHub Desktop clone that landed inside the project (see chat)
+/hang-5/
