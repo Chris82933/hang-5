@@ -32,6 +32,7 @@ interface SettingsState {
   /** Single-hand / unilateral mode: alternate left & right, one hand at a time. */
   unilateral: boolean
   switchSecs: number // rest to swap hands
+  favorites: string[] // program ids pinned to the top of the list
   setThemeMode: (m: ThemeMode) => void
   setSoundTheme: (s: SoundTheme) => void
   setVolume: (v: number) => void
@@ -41,6 +42,7 @@ interface SettingsState {
   setWeightUnit: (u: WeightUnit) => void
   setUnilateral: (b: boolean) => void
   setSwitchSecs: (n: number) => void
+  toggleFavorite: (id: string) => void
 }
 
 export const useSettings = create<SettingsState>()(
@@ -54,6 +56,7 @@ export const useSettings = create<SettingsState>()(
       weightUnit: 'kg',
       unilateral: false,
       switchSecs: 5,
+      favorites: [],
       setThemeMode: (themeMode) => set({ themeMode }),
       setSoundTheme: (soundTheme) => set({ soundTheme }),
       setVolume: (volume) => set({ volume }),
@@ -64,6 +67,12 @@ export const useSettings = create<SettingsState>()(
       setWeightUnit: (weightUnit) => set({ weightUnit }),
       setUnilateral: (unilateral) => set({ unilateral }),
       setSwitchSecs: (switchSecs) => set({ switchSecs }),
+      toggleFavorite: (id) =>
+        set((s) => ({
+          favorites: s.favorites.includes(id)
+            ? s.favorites.filter((f) => f !== id)
+            : [...s.favorites, id],
+        })),
     }),
     {
       name: 'hangboard-settings',

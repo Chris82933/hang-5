@@ -92,6 +92,12 @@
   box-shadow: none;
   transform: translate(4px, 4px);
 }
+.program-card .pc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
 .program-card h3 {
   margin: 0;
   font-size: 17px;
@@ -105,9 +111,49 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  margin-top: 2px;
 }
-.program-card .chips {
-  margin-top: 6px;
+.program-card .star {
+  flex: none;
+  margin: -4px -4px 0 0;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+.program-card .star:active {
+  transform: scale(0.85);
+}
+.program-card .pc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+.program-card .pc-foot .chips {
+  margin-top: 0;
+  flex: 1;
+  min-width: 0;
+}
+/* emphasised total session time */
+.time-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 16px;
+  font-weight: 800;
+  padding: 7px 11px;
+  background: var(--primary);
+  color: var(--on-primary);
+  border: var(--bw) solid var(--border-col);
+  box-shadow: var(--hard-sm);
+  white-space: nowrap;
+}
+.time-badge .tb-clock {
+  font-size: 16px;
+  line-height: 1;
 }
 .chips {
   display: flex;

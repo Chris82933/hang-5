@@ -1,5 +1,4 @@
 import type { GripConfig, HandPosition, Program, WeightUnit } from '../types'
-import { totalDurationSecs } from '../engine/segments'
 
 const HAND_LABELS: Record<HandPosition, string> = {
   'full-crimp': 'Full crimp',
@@ -33,7 +32,7 @@ export function fmtDuration(secs: number): string {
 export function programSummary(p: Program): string {
   const { sets, repsPerSet, hangSecs, restSecs } = p.params
   const reps = repsPerSet > 1 ? `${repsPerSet}×${hangSecs}:${restSecs}` : `${hangSecs}s hang`
-  return `${sets} set${sets > 1 ? 's' : ''} · ${reps} · ~${fmtDuration(totalDurationSecs(p))}`
+  return `${sets} set${sets > 1 ? 's' : ''} · ${reps}`
 }
 
 /** Format an added-weight value: bodyweight, +N, or -N (assisted). */
