@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useActive } from '../store/active'
 import { saveSession } from '../data/db'
+import { soundEngine } from '../engine/audio'
+import { Confetti } from '../components/Confetti'
 import { Field, Stepper } from '../components/ui'
 import { fmtDuration, fmtWeight, gripSummary } from '../lib/format'
 
@@ -11,10 +13,20 @@ export default function Complete() {
   const [rpe, setRpe] = useState<number | undefined>(undefined)
   const [notes, setNotes] = useState('')
   const [topWeight, setTopWeight] = useState(log?.topWeight ?? 0)
+  const celebrated = useRef(false)
 
   useEffect(() => {
     if (!log) nav('/', { replace: true })
   }, [log, nav])
+
+  // Celebrate finishing the whole session — confetti (rendered below) + a
+  // thematic flourish in the current sound theme.
+  useEffect(() => {
+    if (log && !celebrated.current) {
+      celebrated.current = true
+      soundEngine.celebrate()
+    }
+  }, [log])
 
   if (!log) return null
 
@@ -30,6 +42,7 @@ export default function Complete() {
 
   return (
     <div className="page">
+      <Confetti />
       <div className="page-header">
         <div>
           <h1>Nice work 💪</h1>

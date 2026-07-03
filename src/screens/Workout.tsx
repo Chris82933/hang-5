@@ -21,7 +21,7 @@ export default function Workout() {
   }, [program, nav])
 
   const workout = useWorkout(program!)
-  const { state, start, pause, resume, stop, skipNext, skipPrev, summary } = workout
+  const { state, start, pause, resume, stop, skipNext, skipPrev, adjustTime, summary } = workout
 
   useEffect(() => {
     if (program && !started.current) {
@@ -75,6 +75,17 @@ export default function Workout() {
     nav('/', { replace: true })
   }
 
+  // Per-rep pips showing progress through the current set (distinct from the
+  // thin total-progress bar above). Done = filled, current hang = active.
+  const showPips = state.setIndex >= 1 && state.repsInSet > 1
+  const pipState = (k: number): 'done' | 'active' | 'todo' => {
+    if (state.segType === 'hang' && k === state.repIndex) return 'active'
+    if (k < state.repIndex || (k === state.repIndex && state.segType !== 'hang')) return 'done'
+    return 'todo'
+  }
+
+  const isRestLike = state.segType !== 'hang' // rest / rest-set / switch / prep
+
   return (
     <div className="workout" style={{ backgroundColor: colorFor(state.segType) }}>
       <div className="top">
@@ -86,6 +97,13 @@ export default function Workout() {
       <div className="progress-bar">
         <div style={{ width: `${state.progress * 100}%` }} />
       </div>
+      {showPips && (
+        <div className="set-pips" aria-label="set progress">
+          {Array.from({ length: state.repsInSet }, (_, i) => (
+            <span key={i} className={`pip ${pipState(i + 1)}`} />
+          ))}
+        </div>
+      )}
 
       <div className="center">
         <div className="phase">{state.label}</div>
@@ -97,6 +115,12 @@ export default function Workout() {
         )}
         {state.segType === 'hang' && state.targetWeight != null && (
           <div className="weight-badge">{fmtWeight(state.targetWeight, weightUnit)}</div>
+        )}
+        {isRestLike && (
+          <div className="rest-adjust">
+            <button onClick={() => adjustTime(-10)}>−10s</button>
+            <button onClick={() => adjustTime(10)}>+10s</button>
+          </div>
         )}
         {state.status === 'paused' && <div className="setrep">Paused</div>}
       </div>

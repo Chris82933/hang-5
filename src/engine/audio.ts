@@ -6,7 +6,7 @@ import duckUrl from '../assets/ducks.mp3'
  * these at an absolute AudioContext time, so playback is sample-accurate and
  * stays locked to the same clock the visuals read.
  */
-export type CueKind = 'tick' | 'go' | 'rest' | 'done'
+export type CueKind = 'tick' | 'go' | 'rest' | 'done' | 'celebrate'
 
 interface ThemeVoice {
   play(ctx: AudioContext, out: GainNode, kind: CueKind, when: number): void
@@ -55,6 +55,12 @@ const beeps: ThemeVoice = {
         tone(ctx, out, when + 0.18, 1174, 0.15, 'square', 0.8)
         tone(ctx, out, when + 0.36, 1568, 0.4, 'square', 0.9)
         break
+      case 'celebrate': {
+        const seq = [784, 988, 1175, 1568, 1319, 1568]
+        seq.forEach((f, i) => tone(ctx, out, when + i * 0.11, f, 0.16, 'square', 0.8))
+        tone(ctx, out, when + 0.7, 2093, 0.6, 'square', 0.9)
+        break
+      }
     }
   },
 }
@@ -151,6 +157,14 @@ function pianoVoice(note: NoteFn): ThemeVoice {
           note(ctx, out, when + 0.2, 659, 0.5)
           note(ctx, out, when + 0.4, 784, 0.9)
           break
+        case 'celebrate': {
+          // ascending run into a triumphant sustained chord
+          const run = [523, 587, 659, 784, 880, 1047]
+          run.forEach((f, i) => note(ctx, out, when + i * 0.09, f, 0.5))
+          const chord = [659, 784, 1047]
+          chord.forEach((f) => note(ctx, out, when + 0.62, f, 1.6))
+          break
+        }
       }
     },
   }
@@ -245,6 +259,24 @@ const chiptune: ThemeVoice = {
         chipBlip(ctx, out, when + 0.1, 1047, 0.09)
         chipBlip(ctx, out, when + 0.2, 1319, 0.24)
         break
+      case 'celebrate': {
+        // classic 8-bit victory jingle
+        const notes: [number, number][] = [
+          [523, 0.1],
+          [659, 0.1],
+          [784, 0.1],
+          [1047, 0.1],
+          [880, 0.1],
+          [1047, 0.1],
+          [1319, 0.45],
+        ]
+        let t = 0
+        for (const [f, d] of notes) {
+          chipBlip(ctx, out, when + t, f, d + 0.02)
+          t += d
+        }
+        break
+      }
     }
   },
 }
@@ -300,6 +332,18 @@ const cow: ThemeVoice = {
         moo(ctx, out, when, 175, 0.4)
         moo(ctx, out, when + 0.5, 210, 0.7)
         break
+      case 'celebrate': {
+        // a whole herd mooing together
+        const herd: [number, number, number][] = [
+          [0, 150, 0.7],
+          [0.12, 190, 0.8],
+          [0.28, 168, 0.9],
+          [0.45, 220, 0.7],
+          [0.6, 140, 1.0],
+        ]
+        for (const [t, base, dur] of herd) moo(ctx, out, when + t, base, dur)
+        break
+      }
     }
   },
 }
@@ -339,6 +383,16 @@ const bird: ThemeVoice = {
         chirp(ctx, out, when + 0.09, 2900, 3700, 0.07)
         chirp(ctx, out, when + 0.18, 3300, 4200, 0.22)
         break
+      case 'celebrate': {
+        // a flock of birds singing together
+        for (let i = 0; i < 9; i++) {
+          const t = i * 0.07
+          const f0 = 2000 + Math.random() * 900
+          chirp(ctx, out, when + t, f0, f0 + 700 + Math.random() * 600, 0.09)
+        }
+        chirp(ctx, out, when + 0.7, 2600, 4200, 0.3)
+        break
+      }
     }
   },
 }
@@ -381,6 +435,11 @@ const duckSynth: ThemeVoice = {
         quack(ctx, out, when, 400, 0.14)
         quack(ctx, out, when + 0.16, 400, 0.14)
         quack(ctx, out, when + 0.32, 500, 0.24)
+        break
+      case 'celebrate':
+        for (let i = 0; i < 8; i++) {
+          quack(ctx, out, when + i * 0.11, 300 + Math.random() * 350, 0.16)
+        }
         break
     }
   },
@@ -537,6 +596,13 @@ const duck: ThemeVoice = {
         playQuack(ctx, out, when + 0.18, q(1), 1.1)
         playQuack(ctx, out, when + 0.36, q(2), 1.24)
         break
+      case 'celebrate':
+        // a whole flock quacking happily together
+        for (let i = 0; i < 11; i++) {
+          const t = i * 0.09 + Math.random() * 0.04
+          playQuack(ctx, out, when + t, q(i), (0.85 + Math.random() * 0.5) * jitter(), 0.85)
+        }
+        break
     }
   },
 }
@@ -622,6 +688,21 @@ class SoundEngine {
       return
     }
     this.play(kind, ctx.currentTime + 0.02)
+  }
+
+  /** Big thematic flourish for finishing a whole session. */
+  celebrate(): void {
+    const ctx = this.ensure()
+    const fire = () => {
+      if (this.theme === 'duck' && !duckBuffer) {
+        void loadDuck(ctx).then(() => this.play('celebrate', ctx.currentTime + 0.05))
+      } else {
+        this.play('celebrate', ctx.currentTime + 0.05)
+      }
+    }
+    // the workout may have suspended the context on unmount; resume first
+    if (ctx.state === 'suspended') void ctx.resume().then(fire)
+    else fire()
   }
 }
 

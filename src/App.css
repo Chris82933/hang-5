@@ -501,6 +501,61 @@
   transition: width 0.2s linear;
 }
 
+/* segmented per-rep pips — set progress, visually distinct from the bar */
+.set-pips {
+  display: flex;
+  gap: 6px;
+  margin: 10px 22px 0;
+}
+.set-pips .pip {
+  flex: 1;
+  height: 12px;
+  border: 3px solid #111;
+  background: transparent;
+  transition: background 0.15s;
+}
+.set-pips .pip.done {
+  background: #111;
+}
+.set-pips .pip.active {
+  background: #fff;
+}
+
+/* +/- 10s rest adjustment */
+.rest-adjust {
+  display: flex;
+  gap: 14px;
+  margin-top: 22px;
+}
+.rest-adjust button {
+  padding: 12px 20px;
+  border: 3px solid #111;
+  background: #fff;
+  color: #111;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: 0.5px;
+  box-shadow: 4px 4px 0 #111;
+}
+.rest-adjust button:active {
+  box-shadow: none;
+  transform: translate(4px, 4px);
+}
+
+/* confetti overlay for session completion */
+.confetti {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--maxw);
+  height: 100%;
+  pointer-events: none;
+  z-index: 60;
+}
+
 /* ---- misc --------------------------------------------------------------- */
 .empty {
   text-align: center;

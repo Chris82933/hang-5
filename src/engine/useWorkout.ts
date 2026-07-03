@@ -46,7 +46,7 @@ export function useWorkout(program: Program) {
   const events = useRef<AudioEvent[]>([])
   const eventIdx = useRef(0)
   const origin = useRef(0) // performance.now() (ms) corresponding to elapsed=0
-  const pausedElapsed = useRef(0)
+  const frozen = useRef<number | null>(null) // elapsed (s) while paused, else null
   const schedTimer = useRef<number | null>(null)
   const rafId = useRef<number | null>(null)
   const wakeLock = useRef<WakeLockSentinel | null>(null)
@@ -65,16 +65,16 @@ export function useWorkout(program: Program) {
     progress: 0,
   })
 
-  // Build the timeline + audio event list from the program (pure, memo-ish).
-  const rebuild = useCallback(() => {
-    const segs = buildSegments(program, { unilateral, switchSecs })
+  // Recompute segment start offsets, total duration and audio events from the
+  // current segments array (which may have been edited live, e.g. +10s rest).
+  const recompute = useCallback(() => {
+    const segs = segments.current
     const starts: number[] = []
     let acc = 0
     for (const s of segs) {
       starts.push(acc)
       acc += s.durationSecs
     }
-    segments.current = segs
     segStart.current = starts
     totalDuration.current = acc
 
@@ -94,18 +94,24 @@ export function useWorkout(program: Program) {
           evs.push({ at: start + s.durationSecs, kind: 'rest' })
         }
       }
-      if (s.type === 'done') {
-        evs.push({ at: start, kind: 'done' })
-      }
+      // note: the final celebration is fired by the Complete screen, so no
+      // 'done' cue is scheduled here.
     })
     evs.sort((a, b) => a.at - b.at)
     events.current = evs
-  }, [program, unilateral, switchSecs])
+  }, [])
+
+  const rebuild = useCallback(() => {
+    segments.current = buildSegments(program, { unilateral, switchSecs })
+    recompute()
+  }, [program, unilateral, switchSecs, recompute])
 
   // The visual timeline runs off a wall clock (performance.now) so it never
   // depends on the AudioContext being unlocked. `origin` is the perf timestamp
   // (ms) corresponding to elapsed = 0.
   const elapsedNow = useCallback(() => {
+    // while paused the clock is frozen so adjust/skip use a stable position
+    if (frozen.current != null) return frozen.current
     return (performance.now() - origin.current) / 1000
   }, [])
 
@@ -222,6 +228,7 @@ export function useWorkout(program: Program) {
       /* audio unavailable — visuals still run */
     }
     origin.current = performance.now() + 150 // tiny lead-in
+    frozen.current = null
     eventIdx.current = 0
     void requestWake()
     setState((s) => ({ ...s, status: 'running' }))
@@ -230,7 +237,7 @@ export function useWorkout(program: Program) {
 
   const pause = useCallback(() => {
     if (state.status !== 'running') return
-    pausedElapsed.current = elapsedNow()
+    frozen.current = elapsedNow() // freeze the clock
     soundEngine.suspend()
     stopLoops()
     setState((s) => ({ ...s, status: 'paused' }))
@@ -243,24 +250,52 @@ export function useWorkout(program: Program) {
     } catch {
       /* ignore */
     }
-    origin.current = performance.now() - pausedElapsed.current * 1000
+    origin.current = performance.now() - (frozen.current ?? 0) * 1000
+    frozen.current = null
     setState((s) => ({ ...s, status: 'running' }))
     startLoops()
   }, [state.status, startLoops])
 
-  const jumpTo = useCallback((index: number) => {
-    const clamped = Math.max(0, Math.min(index, segments.current.length - 1))
-    const at = segStart.current[clamped]
-    origin.current = performance.now() - at * 1000
-    // move the event pointer to the first event at/after this segment
-    let idx = 0
-    while (idx < events.current.length && events.current[idx].at < at) idx++
-    eventIdx.current = idx
-  }, [])
+  const jumpTo = useCallback(
+    (index: number) => {
+      const clamped = Math.max(0, Math.min(index, segments.current.length - 1))
+      const at = segStart.current[clamped]
+      if (frozen.current != null) frozen.current = at
+      else origin.current = performance.now() - at * 1000
+      // move the event pointer to the first event at/after this segment
+      let idx = 0
+      while (idx < events.current.length && events.current[idx].at < at) idx++
+      eventIdx.current = idx
+      render() // reflect the jump immediately, even while paused
+    },
+    [render],
+  )
 
   // Skip uses the live elapsed-derived index so rapid taps advance correctly.
   const skipNext = useCallback(() => jumpTo(currentIndex() + 1), [jumpTo, currentIndex])
   const skipPrev = useCallback(() => jumpTo(currentIndex() - 1), [jumpTo, currentIndex])
+
+  /** Add/subtract time to the current rest so people can tweak it on the fly. */
+  const adjustTime = useCallback(
+    (deltaSec: number) => {
+      const i = currentIndex()
+      const seg = segments.current[i]
+      if (!seg || seg.type === 'hang' || seg.type === 'done') return
+      const elapsedInSeg = elapsedNow() - segStart.current[i]
+      // keep at least ~1s remaining after a subtraction
+      const newDur = Math.max(elapsedInSeg + 1, seg.durationSecs + deltaSec)
+      if (newDur === seg.durationSecs) return
+      seg.durationSecs = newDur
+      recompute()
+      // keep the audio scheduler pointer on the first still-upcoming event
+      const el = elapsedNow()
+      let idx = 0
+      while (idx < events.current.length && events.current[idx].at <= el) idx++
+      eventIdx.current = idx
+      render()
+    },
+    [currentIndex, elapsedNow, recompute, render],
+  )
 
   const stop = useCallback(() => {
     stopLoops()
@@ -314,5 +349,5 @@ export function useWorkout(program: Program) {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [state.status, requestWake])
 
-  return { state, start, pause, resume, stop, skipNext, skipPrev, summary }
+  return { state, start, pause, resume, stop, skipNext, skipPrev, adjustTime, summary }
 }
