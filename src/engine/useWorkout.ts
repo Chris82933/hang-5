@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Program, Segment, SegmentType } from '../types'
-import { buildSegments } from './segments'
+import type { HandPosition, Program, Segment, SegmentType } from '../types'
+import { buildSegments, programHolds, programSetCount } from './segments'
 import { soundEngine, type CueKind } from './audio'
 import { useSettings } from '../store/settings'
 
@@ -27,6 +27,8 @@ export interface WorkoutState {
   targetWeight?: number // weighted programs: added load for the current hang
   hand?: 'L' | 'R' // single-hand mode: which hand the current hang is for
   manualWeight?: number // manual weight mode: the live user-set load
+  holdCur?: HandPosition // multi-hold routines: current/upcoming hang's hold
+  holdNext?: HandPosition // multi-hold routines: the hang after that
 }
 
 export type WeightMode = 'none' | 'progressive' | 'manual'
@@ -46,6 +48,8 @@ export function useWorkout(program: Program) {
   const weightMode: WeightMode = program.params.weighted
     ? program.params.weightMode ?? 'progressive'
     : 'none'
+
+  const hasMultipleHolds = programHolds(program).length > 1
 
   const manualWeight = useRef(program.params.startWeight ?? 0)
   const sessionMaxWeight = useRef<number | undefined>(undefined)
@@ -69,7 +73,7 @@ export function useWorkout(program: Program) {
     setIndex: 0,
     repIndex: 0,
     repsInSet: 0,
-    totalSets: program.params.sets,
+    totalSets: programSetCount(program),
     segIndex: 0,
     totalSegments: 0,
     progress: 0,
@@ -184,6 +188,21 @@ export function useWorkout(program: Program) {
     let i = starts.length - 1
     while (i > 0 && starts[i] > elapsed) i--
     const seg = segments.current[i]
+    // current/upcoming hang hold + the one after it (for multi-hold routines)
+    let holdCur: HandPosition | undefined
+    let holdNext: HandPosition | undefined
+    if (hasMultipleHolds) {
+      for (let j = i; j < segments.current.length; j++) {
+        const h = segments.current[j].hold
+        if (segments.current[j].type === 'hang' && h) {
+          if (holdCur == null) holdCur = h
+          else {
+            holdNext = h
+            break
+          }
+        }
+      }
+    }
     // record the heaviest load actually hung (manual weight mode)
     if (seg.type === 'hang' && weightMode === 'manual') {
       const w = manualWeight.current
@@ -207,9 +226,11 @@ export function useWorkout(program: Program) {
         progress: elapsed / totalDuration.current,
         targetWeight: seg.targetWeight,
         hand: seg.hand,
+        holdCur,
+        holdNext,
       }
     })
-  }, [elapsedNow, finish, weightMode])
+  }, [elapsedNow, finish, weightMode, hasMultipleHolds])
 
   const tick = useCallback(() => {
     scheduleAudio()
@@ -380,6 +401,7 @@ export function useWorkout(program: Program) {
   return {
     state,
     weightMode,
+    hasMultipleHolds,
     start,
     pause,
     resume,

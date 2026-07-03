@@ -1,4 +1,4 @@
-import type { BuildOptions, Program, ProgramParams, Segment } from '../types'
+import type { BuildOptions, HandPosition, Program, ProgramParams, Segment } from '../types'
 
 const DEFAULT_SWITCH_SECS = 5
 
@@ -14,13 +14,29 @@ export function topWeight(p: ProgramParams): number {
   return setWeight(p, Math.max(1, p.sets))
 }
 
+export function isAdvanced(program: Program): boolean {
+  return !!program.sequence && program.sequence.length > 0
+}
+
+/** The number of "sets" (blocks for advanced routines) in a program. */
+export function programSetCount(program: Program): number {
+  return isAdvanced(program) ? program.sequence!.length : program.params.sets
+}
+
+/** Distinct holds a program uses, in order of first appearance. */
+export function programHolds(program: Program): HandPosition[] {
+  if (isAdvanced(program)) {
+    const seen: HandPosition[] = []
+    for (const b of program.sequence!) if (!seen.includes(b.handPosition)) seen.push(b.handPosition)
+    return seen
+  }
+  return [program.grip.handPosition]
+}
+
 /**
- * Expand a program's interval parameters into a flat timeline of segments.
- * Pure function — used by every program type (repeaters, max hang, custom).
- *
- * Structure per rep (bilateral):     [hang] [rest]
- * Structure per rep (unilateral):    [hang L] [switch] [hang R] [rest]
- * The last rep's rest is replaced by the between-set rest, or dropped at the end.
+ * Expand a program into a flat timeline of segments. Handles simple programs
+ * (sets/reps/hang/rest + one grip) and advanced routines (a `sequence` of
+ * blocks, each on its own hold). Unilateral mode splits each hang into L/R.
  */
 export function buildSegments(program: Program, opts: BuildOptions = {}): Segment[] {
   const p = program.params
@@ -39,74 +55,86 @@ export function buildSegments(program: Program, opts: BuildOptions = {}): Segmen
     })
   }
 
-  for (let set = 1; set <= p.sets; set++) {
-    for (let rep = 1; rep <= p.repsPerSet; rep++) {
-      const weight = p.weighted ? setWeight(p, set) : undefined
+  const addHang = (a: {
+    setIndex: number
+    repIndex: number
+    repsInSet: number
+    hangSecs: number
+    hold?: HandPosition
+    weight?: number
+  }) => {
+    if (unilateral) {
+      segments.push({
+        type: 'hang', durationSecs: a.hangSecs, label: 'LEFT',
+        setIndex: a.setIndex, repIndex: a.repIndex, repsInSet: a.repsInSet,
+        targetWeight: a.weight, hold: a.hold, hand: 'L',
+      })
+      segments.push({
+        type: 'switch', durationSecs: switchSecs, label: 'Switch hands',
+        setIndex: a.setIndex, repIndex: a.repIndex, repsInSet: a.repsInSet,
+      })
+      segments.push({
+        type: 'hang', durationSecs: a.hangSecs, label: 'RIGHT',
+        setIndex: a.setIndex, repIndex: a.repIndex, repsInSet: a.repsInSet,
+        targetWeight: a.weight, hold: a.hold, hand: 'R',
+      })
+    } else {
+      segments.push({
+        type: 'hang', durationSecs: a.hangSecs, label: 'HANG',
+        setIndex: a.setIndex, repIndex: a.repIndex, repsInSet: a.repsInSet,
+        targetWeight: a.weight, hold: a.hold,
+      })
+    }
+  }
 
-      if (unilateral) {
-        segments.push({
-          type: 'hang',
-          durationSecs: p.hangSecs,
-          label: 'LEFT',
-          setIndex: set,
+  const addRest = (
+    type: 'rest' | 'rest-set',
+    durationSecs: number,
+    setIndex: number,
+    repIndex: number,
+    repsInSet: number,
+  ) => {
+    if (durationSecs > 0) {
+      segments.push({ type, durationSecs, label: type === 'rest-set' ? 'Set rest' : 'Rest', setIndex, repIndex, repsInSet })
+    }
+  }
+
+  if (isAdvanced(program)) {
+    // advanced: one block per hold, uniform rest between every hang
+    const seq = program.sequence!
+    const totalHangs = seq.reduce((n, b) => n + b.reps, 0)
+    let done = 0
+    seq.forEach((block, bi) => {
+      for (let rep = 1; rep <= block.reps; rep++) {
+        addHang({
+          setIndex: bi + 1,
           repIndex: rep,
-          repsInSet: p.repsPerSet,
-          targetWeight: weight,
-          hand: 'L',
+          repsInSet: block.reps,
+          hangSecs: block.hangSecs,
+          hold: block.handPosition,
         })
-        segments.push({
-          type: 'switch',
-          durationSecs: switchSecs,
-          label: 'Switch hands',
-          setIndex: set,
-          repIndex: rep,
-          repsInSet: p.repsPerSet,
-        })
-        segments.push({
-          type: 'hang',
-          durationSecs: p.hangSecs,
-          label: 'RIGHT',
-          setIndex: set,
-          repIndex: rep,
-          repsInSet: p.repsPerSet,
-          targetWeight: weight,
-          hand: 'R',
-        })
-      } else {
-        segments.push({
-          type: 'hang',
-          durationSecs: p.hangSecs,
-          label: 'HANG',
-          setIndex: set,
-          repIndex: rep,
-          repsInSet: p.repsPerSet,
-          targetWeight: weight,
-        })
+        done++
+        if (done < totalHangs) addRest('rest', block.restSecs, bi + 1, rep, block.reps)
       }
-
-      const isLastRepOfSet = rep === p.repsPerSet
-      const isLastSet = set === p.sets
-
-      if (isLastRepOfSet) {
-        if (!isLastSet && p.restBetweenSetsSecs > 0) {
-          segments.push({
-            type: 'rest-set',
-            durationSecs: p.restBetweenSetsSecs,
-            label: 'Set rest',
-            setIndex: set,
-            repIndex: rep,
-            repsInSet: p.repsPerSet,
-          })
-        }
-      } else if (p.restSecs > 0) {
-        segments.push({
-          type: 'rest',
-          durationSecs: p.restSecs,
-          label: 'Rest',
+    })
+  } else {
+    for (let set = 1; set <= p.sets; set++) {
+      for (let rep = 1; rep <= p.repsPerSet; rep++) {
+        addHang({
           setIndex: set,
           repIndex: rep,
           repsInSet: p.repsPerSet,
+          hangSecs: p.hangSecs,
+          hold: program.grip.handPosition,
+          weight: p.weighted ? setWeight(p, set) : undefined,
         })
+        const isLastRepOfSet = rep === p.repsPerSet
+        const isLastSet = set === p.sets
+        if (isLastRepOfSet) {
+          if (!isLastSet) addRest('rest-set', p.restBetweenSetsSecs, set, rep, p.repsPerSet)
+        } else {
+          addRest('rest', p.restSecs, set, rep, p.repsPerSet)
+        }
       }
     }
   }
@@ -130,6 +158,10 @@ export function handsPerRep(opts: BuildOptions = {}): number {
 
 /** Total working (hang) time a program prescribes, in seconds. */
 export function totalHangSecs(program: Program, opts: BuildOptions = {}): number {
+  if (isAdvanced(program)) {
+    const base = program.sequence!.reduce((n, b) => n + b.reps * b.hangSecs, 0)
+    return base * handsPerRep(opts)
+  }
   const p = program.params
   return p.sets * p.repsPerSet * p.hangSecs * handsPerRep(opts)
 }

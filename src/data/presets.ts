@@ -126,6 +126,31 @@ export const PRESET_PROGRAMS: Program[] = [
     },
   },
   {
+    id: 'abrahamsson-daily',
+    name: 'Abrahamsson Daily',
+    kind: 'repeaters',
+    description:
+      'Emil Abrahamsson’s low-intensity daily routine: 20 × 10s hangs / 20s rest, cycling through six holds. Bodyweight, no failure.',
+    builtIn: true,
+    grip: { edgeSizeMm: 20, edgeType: 'wood', fingers: 4, handPosition: 'half-crimp' },
+    params: {
+      prepSecs: 15,
+      sets: 6,
+      repsPerSet: 6,
+      hangSecs: 10,
+      restSecs: 20,
+      restBetweenSetsSecs: 20,
+    },
+    sequence: [
+      { handPosition: 'half-crimp', reps: 6, hangSecs: 10, restSecs: 20 },
+      { handPosition: 'three-finger-drag', reps: 6, hangSecs: 10, restSecs: 20 },
+      { handPosition: 'front-2-drag', reps: 2, hangSecs: 10, restSecs: 20 },
+      { handPosition: 'middle-2-drag', reps: 2, hangSecs: 10, restSecs: 20 },
+      { handPosition: 'front-2-crimp', reps: 2, hangSecs: 10, restSecs: 20 },
+      { handPosition: 'middle-2-crimp', reps: 2, hangSecs: 10, restSecs: 20 },
+    ],
+  },
+  {
     id: 'frequency-hangs',
     name: 'Frequency Hangs',
     kind: 'repeaters',

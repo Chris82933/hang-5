@@ -20,4 +20,10 @@ export const HAND_POSITIONS: { value: HandPosition; label: string }[] = [
   { value: 'front-2', label: 'Front 2' },
   { value: 'back-2', label: 'Back 2' },
   { value: 'middle-2', label: 'Middle 2' },
+  // compound finger + style grips
+  { value: 'three-finger-drag', label: '3-finger drag' },
+  { value: 'front-2-drag', label: 'Front-2 drag' },
+  { value: 'middle-2-drag', label: 'Middle-2 drag' },
+  { value: 'front-2-crimp', label: 'Front-2 crimp' },
+  { value: 'middle-2-crimp', label: 'Middle-2 crimp' },
 ]

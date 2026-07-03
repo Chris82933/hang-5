@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useActive } from '../store/active'
 import { useSettings } from '../store/settings'
 import { useWorkout } from '../engine/useWorkout'
-import { fmtWeight } from '../lib/format'
+import { fmtWeight, handLabel } from '../lib/format'
 import type { SegmentType } from '../types'
 
 export default function Workout() {
@@ -24,6 +24,7 @@ export default function Workout() {
   const {
     state,
     weightMode,
+    hasMultipleHolds,
     start,
     pause,
     resume,
@@ -119,6 +120,15 @@ export default function Workout() {
 
       <div className="center">
         <div className="phase">{state.label}</div>
+        {hasMultipleHolds && state.holdCur && (
+          <div className="hold-info">
+            <div className="hold-now">
+              {state.segType !== 'hang' && <span className="hold-tag">Next up</span>}
+              {handLabel(state.holdCur)}
+            </div>
+            {state.holdNext && <div className="hold-next">then · {handLabel(state.holdNext)}</div>}
+          </div>
+        )}
         <div className="count">{state.secondsRemaining}</div>
         {state.segType === 'hang' && state.repsInSet > 1 && (
           <div className="setrep">

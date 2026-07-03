@@ -3,7 +3,7 @@ import { usePrograms } from '../data/programs'
 import { useSettings } from '../store/settings'
 import type { Program } from '../types'
 import { gripSummary, programSummary, fmtDuration } from '../lib/format'
-import { totalDurationSecs } from '../engine/segments'
+import { totalDurationSecs, isAdvanced, programHolds } from '../engine/segments'
 
 function StarIcon({ filled }: { filled: boolean }) {
   return (
@@ -50,7 +50,11 @@ function ProgramCard({
       <div className="prog-summary">{programSummary(program)}</div>
       <div className="pc-foot">
         <div className="chips">
-          <span className="chip">{gripSummary(program.grip)}</span>
+          <span className="chip">
+            {isAdvanced(program)
+              ? `${program.grip.edgeSizeMm}mm ${program.grip.edgeType} · ${programHolds(program).length} holds`
+              : gripSummary(program.grip)}
+          </span>
           {program.params.weighted ? (
             <span className="chip strength">Weighted</span>
           ) : (

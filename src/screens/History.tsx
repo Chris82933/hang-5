@@ -21,6 +21,7 @@ export default function History() {
   const [sessions, setSessions] = useState<SessionLog[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<View>('strength')
+  const [confirmId, setConfirmId] = useState<number | null>(null)
 
   const reload = () =>
     getSessions().then((s) => {
@@ -162,9 +163,31 @@ export default function History() {
                   <h3 style={{ margin: 0, fontSize: 16 }}>{s.programName}</h3>
                   <div className="date">{fmtDate(s.date)}</div>
                 </div>
-                <button className="btn danger" onClick={() => remove(s.id)} style={{ padding: '8px 12px' }}>
-                  Delete
-                </button>
+                {confirmId === s.id ? (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      className="btn danger"
+                      style={{ padding: '8px 12px' }}
+                      onClick={() => {
+                        void remove(s.id)
+                        setConfirmId(null)
+                      }}
+                    >
+                      Confirm
+                    </button>
+                    <button className="btn" style={{ padding: '8px 12px' }} onClick={() => setConfirmId(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="btn"
+                    style={{ padding: '8px 12px' }}
+                    onClick={() => setConfirmId(s.id ?? null)}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
               <div className="chips" style={{ marginTop: 10 }}>
                 <span className={`chip ${isStrength(s) ? 'strength' : 'endurance'}`}>

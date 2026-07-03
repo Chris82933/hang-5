@@ -562,6 +562,34 @@
   background: #fff;
 }
 
+/* multi-hold routine: current + next hold */
+.hold-info {
+  text-align: center;
+  margin: 4px 0 2px;
+}
+.hold-now {
+  font-size: 22px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hold-tag {
+  background: #111;
+  color: #fff;
+  font-size: 12px;
+  padding: 3px 8px;
+}
+.hold-next {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-top: 3px;
+}
+
 /* live manual weight control */
 .weight-control {
   display: flex;
@@ -689,6 +717,20 @@
   box-shadow: none;
   transform: translate(5px, 5px);
 }
+/* advanced routine block editor */
+.block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.block-num {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 13px;
+}
+
 /* personal-record banner */
 .pr-card {
   display: flex;

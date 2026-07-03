@@ -14,6 +14,12 @@ export type HandPosition =
   | 'front-2'
   | 'back-2'
   | 'middle-2'
+  // compound finger + style grips (e.g. Abrahamsson routine)
+  | 'three-finger-drag'
+  | 'front-2-drag'
+  | 'middle-2-drag'
+  | 'front-2-crimp'
+  | 'middle-2-crimp'
 
 export interface GripConfig {
   edgeSizeMm: number
@@ -64,6 +70,18 @@ export interface ProgramParams {
   unilateral?: boolean
 }
 
+/**
+ * One block of an advanced routine: a run of identical hangs on a given hold.
+ * A program with a non-empty `sequence` is "advanced" and ignores the
+ * sets/reps/hang/rest in `params` (prep + grip edge still apply).
+ */
+export interface SetBlock {
+  handPosition: HandPosition
+  reps: number
+  hangSecs: number
+  restSecs: number
+}
+
 export interface Program {
   id: string
   name: string
@@ -71,6 +89,8 @@ export interface Program {
   description: string
   params: ProgramParams
   grip: GripConfig
+  /** advanced routines: different holds per block (e.g. Abrahamsson) */
+  sequence?: SetBlock[]
   builtIn?: boolean
 }
 
@@ -92,6 +112,8 @@ export interface Segment {
   targetWeight?: number
   /** which hand this hang is for (single-hand / unilateral mode) */
   hand?: Hand
+  /** the hold/position for this hang (used by multi-hold routines) */
+  hold?: HandPosition
 }
 
 /** Options that change how a program expands into a timeline (from settings). */

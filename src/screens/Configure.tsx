@@ -7,9 +7,9 @@ import { useActive } from '../store/active'
 import { useSettings } from '../store/settings'
 import { Field, Stepper, Segmented } from '../components/ui'
 import { WeightedConfig } from '../components/WeightedConfig'
-import { fmtDuration } from '../lib/format'
+import { fmtDuration, handLabel } from '../lib/format'
 import { EDGE_TYPES, HAND_POSITIONS } from '../lib/gripOptions'
-import { totalDurationSecs, totalHangSecs } from '../engine/segments'
+import { isAdvanced, totalDurationSecs, totalHangSecs } from '../engine/segments'
 
 export default function Configure() {
   const { id } = useParams()
@@ -67,39 +67,65 @@ export default function Configure() {
         </div>
       </div>
 
-      <div className="section-label">Timing</div>
-      <div className="card">
-        <Field label="Prep countdown">
-          <Stepper value={p.prepSecs} min={0} max={60} step={5} suffix="s" onChange={(v) => setP({ prepSecs: v })} />
-        </Field>
-        <Field label="Sets">
-          <Stepper value={p.sets} min={1} max={20} onChange={(v) => setP({ sets: v })} />
-        </Field>
-        <Field label="Reps per set">
-          <Stepper value={p.repsPerSet} min={1} max={20} onChange={(v) => setP({ repsPerSet: v })} />
-        </Field>
-        <Field label="Hang">
-          <Stepper value={p.hangSecs} min={1} max={120} suffix="s" onChange={(v) => setP({ hangSecs: v })} />
-        </Field>
-        <Field label="Rest between reps">
-          <Stepper value={p.restSecs} min={0} max={120} suffix="s" onChange={(v) => setP({ restSecs: v })} />
-        </Field>
-        <Field label="Rest between sets">
-          <Stepper value={p.restBetweenSetsSecs} min={0} max={600} step={15} suffix="s" onChange={(v) => setP({ restBetweenSetsSecs: v })} />
-        </Field>
-      </div>
+      {isAdvanced(prog) ? (
+        <>
+          <div className="section-label">Sequence</div>
+          <div className="card">
+            <Field label="Prep countdown">
+              <Stepper value={p.prepSecs} min={0} max={60} step={5} suffix="s" onChange={(v) => setP({ prepSecs: v })} />
+            </Field>
+            {prog.sequence!.map((b, i) => (
+              <div className="field" key={i}>
+                <label>
+                  Block {i + 1} · {handLabel(b.handPosition)}
+                </label>
+                <span className="hint">
+                  {b.reps} × {b.hangSecs}:{b.restSecs}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p style={{ color: 'var(--muted)', fontSize: 13, margin: '10px 2px 0' }}>
+            Edit the holds and timing by saving a copy, then opening it from My programs.
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="section-label">Timing</div>
+          <div className="card">
+            <Field label="Prep countdown">
+              <Stepper value={p.prepSecs} min={0} max={60} step={5} suffix="s" onChange={(v) => setP({ prepSecs: v })} />
+            </Field>
+            <Field label="Sets">
+              <Stepper value={p.sets} min={1} max={20} onChange={(v) => setP({ sets: v })} />
+            </Field>
+            <Field label="Reps per set">
+              <Stepper value={p.repsPerSet} min={1} max={20} onChange={(v) => setP({ repsPerSet: v })} />
+            </Field>
+            <Field label="Hang">
+              <Stepper value={p.hangSecs} min={1} max={120} suffix="s" onChange={(v) => setP({ hangSecs: v })} />
+            </Field>
+            <Field label="Rest between reps">
+              <Stepper value={p.restSecs} min={0} max={120} suffix="s" onChange={(v) => setP({ restSecs: v })} />
+            </Field>
+            <Field label="Rest between sets">
+              <Stepper value={p.restBetweenSetsSecs} min={0} max={600} step={15} suffix="s" onChange={(v) => setP({ restBetweenSetsSecs: v })} />
+            </Field>
+          </div>
 
-      <WeightedConfig params={p} patch={setP} />
+          <WeightedConfig params={p} patch={setP} />
 
-      <div className="section-label">Hand mode</div>
-      <Segmented<'two' | 'one'>
-        value={effUnilateral ? 'one' : 'two'}
-        options={[
-          { value: 'two', label: 'Two-handed hangs' },
-          { value: 'one', label: 'One-handed lifts' },
-        ]}
-        onChange={(v) => setP({ unilateral: v === 'one' })}
-      />
+          <div className="section-label">Hand mode</div>
+          <Segmented<'two' | 'one'>
+            value={effUnilateral ? 'one' : 'two'}
+            options={[
+              { value: 'two', label: 'Two-handed hangs' },
+              { value: 'one', label: 'One-handed lifts' },
+            ]}
+            onChange={(v) => setP({ unilateral: v === 'one' })}
+          />
+        </>
+      )}
 
       <div className="section-label">Grip</div>
       <div className="card">
@@ -109,19 +135,23 @@ export default function Configure() {
       </div>
       <div className="section-label">Edge type</div>
       <Segmented value={prog.grip.edgeType} options={EDGE_TYPES} onChange={(v) => setGrip({ edgeType: v })} />
-      <div className="section-label">Hand position</div>
-      <div className="chips" style={{ gap: 8 }}>
-        {HAND_POSITIONS.map((h) => (
-          <button
-            key={h.value}
-            className={`chip ${prog.grip.handPosition === h.value ? 'accent' : ''}`}
-            style={{ fontSize: 13, padding: '8px 12px' }}
-            onClick={() => setGrip({ handPosition: h.value })}
-          >
-            {h.label}
-          </button>
-        ))}
-      </div>
+      {!isAdvanced(prog) && (
+        <>
+          <div className="section-label">Hand position</div>
+          <div className="chips" style={{ gap: 8 }}>
+            {HAND_POSITIONS.map((h) => (
+              <button
+                key={h.value}
+                className={`chip ${prog.grip.handPosition === h.value ? 'accent' : ''}`}
+                style={{ fontSize: 13, padding: '8px 12px' }}
+                onClick={() => setGrip({ handPosition: h.value })}
+              >
+                {h.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="action-bar">
         <button className="btn" onClick={saveAsMine}>
