@@ -26,7 +26,10 @@ export interface WorkoutState {
   progress: number // 0..1 through the whole workout
   targetWeight?: number // weighted programs: added load for the current hang
   hand?: 'L' | 'R' // single-hand mode: which hand the current hang is for
+  manualWeight?: number // manual weight mode: the live user-set load
 }
+
+export type WeightMode = 'none' | 'progressive' | 'manual'
 
 /**
  * Runs a program. The visual timeline runs off a wall clock; audio cues are
@@ -39,6 +42,13 @@ export function useWorkout(program: Program) {
   const switchSecs = useSettings((s) => s.switchSecs)
   // a program can override the global two-handed / one-handed default
   const unilateral = program.params.unilateral ?? globalUnilateral
+
+  const weightMode: WeightMode = program.params.weighted
+    ? program.params.weightMode ?? 'progressive'
+    : 'none'
+
+  const manualWeight = useRef(program.params.startWeight ?? 0)
+  const sessionMaxWeight = useRef<number | undefined>(undefined)
 
   const segments = useRef<Segment[]>([])
   const segStart = useRef<number[]>([]) // elapsed at which each segment starts
@@ -63,6 +73,7 @@ export function useWorkout(program: Program) {
     segIndex: 0,
     totalSegments: 0,
     progress: 0,
+    manualWeight: weightMode === 'manual' ? program.params.startWeight ?? 0 : undefined,
   })
 
   // Recompute segment start offsets, total duration and audio events from the
@@ -173,6 +184,12 @@ export function useWorkout(program: Program) {
     let i = starts.length - 1
     while (i > 0 && starts[i] > elapsed) i--
     const seg = segments.current[i]
+    // record the heaviest load actually hung (manual weight mode)
+    if (seg.type === 'hang' && weightMode === 'manual') {
+      const w = manualWeight.current
+      sessionMaxWeight.current =
+        sessionMaxWeight.current == null ? w : Math.max(sessionMaxWeight.current, w)
+    }
     const remaining = Math.max(0, starts[i] + seg.durationSecs - elapsed)
     setState((prev) => {
       const secondsRemaining = Math.ceil(remaining)
@@ -192,7 +209,7 @@ export function useWorkout(program: Program) {
         hand: seg.hand,
       }
     })
-  }, [elapsedNow, finish])
+  }, [elapsedNow, finish, weightMode])
 
   const tick = useCallback(() => {
     scheduleAudio()
@@ -203,6 +220,13 @@ export function useWorkout(program: Program) {
     render()
     rafId.current = requestAnimationFrame(rafLoop)
   }, [render])
+
+  /** Manual weight mode: dial the live load up/down mid-session. */
+  const adjustWeight = useCallback((delta: number) => {
+    const next = Math.max(-40, Math.min(200, manualWeight.current + delta))
+    manualWeight.current = next
+    setState((s) => ({ ...s, manualWeight: next }))
+  }, [])
 
   const startLoops = useCallback(() => {
     stopLoops()
@@ -230,6 +254,8 @@ export function useWorkout(program: Program) {
     origin.current = performance.now() + 150 // tiny lead-in
     frozen.current = null
     eventIdx.current = 0
+    manualWeight.current = program.params.startWeight ?? 0
+    sessionMaxWeight.current = undefined
     void requestWake()
     setState((s) => ({ ...s, status: 'running' }))
     startLoops()
@@ -319,6 +345,8 @@ export function useWorkout(program: Program) {
         }
       }
     })
+    // manual mode: the heaviest load hung is tracked live, not from the ramp
+    if (weightMode === 'manual') topWeight = sessionMaxWeight.current
     // in single-hand mode each rep is two hangs (L + R)
     const hangsPerRep = (unilateral ? 2 : 1) * (program.params.repsPerSet || 1)
     return {
@@ -327,7 +355,7 @@ export function useWorkout(program: Program) {
       totalHangSecs: Math.round(hangSecs),
       topWeight,
     }
-  }, [state.status, elapsedNow, program.params.repsPerSet, unilateral])
+  }, [state.status, elapsedNow, program.params.repsPerSet, unilateral, weightMode])
 
   // cleanup on unmount
   useEffect(() => {
@@ -349,5 +377,17 @@ export function useWorkout(program: Program) {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [state.status, requestWake])
 
-  return { state, start, pause, resume, stop, skipNext, skipPrev, adjustTime, summary }
+  return {
+    state,
+    weightMode,
+    start,
+    pause,
+    resume,
+    stop,
+    skipNext,
+    skipPrev,
+    adjustTime,
+    adjustWeight,
+    summary,
+  }
 }

@@ -99,6 +99,7 @@ export const PRESET_PROGRAMS: Program[] = [
       restSecs: 0,
       restBetweenSetsSecs: 180,
       weighted: true,
+      weightMode: 'progressive',
       startWeight: 0, // first two sets are warm-up at bodyweight
       weightStep: 5,
     },
@@ -119,6 +120,7 @@ export const PRESET_PROGRAMS: Program[] = [
       restSecs: 3,
       restBetweenSetsSecs: 180,
       weighted: true,
+      weightMode: 'progressive',
       startWeight: 0,
       weightStep: 2.5,
     },

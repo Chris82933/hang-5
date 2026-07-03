@@ -11,15 +11,22 @@ import {
 import type { SessionLog } from '../types'
 import { getSessions, deleteSession } from '../data/db'
 import { fmtDate, fmtDuration, fmtWeight, gripSummary } from '../lib/format'
+import { Segmented } from '../components/ui'
+
+type View = 'strength' | 'endurance'
+
+const isStrength = (s: SessionLog) => !!s.weighted
 
 export default function History() {
   const [sessions, setSessions] = useState<SessionLog[]>([])
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<View>('strength')
 
-  const reload = () => getSessions().then((s) => {
-    setSessions(s)
-    setLoading(false)
-  })
+  const reload = () =>
+    getSessions().then((s) => {
+      setSessions(s)
+      setLoading(false)
+    })
 
   useEffect(() => {
     void reload()
@@ -31,25 +38,31 @@ export default function History() {
     void reload()
   }
 
-  // oldest → newest for the chart
-  const chartData = [...sessions]
-    .reverse()
-    .map((s) => ({
-      label: fmtDate(s.date),
-      hang: s.totalHangSecs,
-      rpe: s.rpe ?? null,
-    }))
+  const strengthSessions = sessions.filter(isStrength)
+  const enduranceSessions = sessions.filter((s) => !isStrength(s))
+  const hasStrength = strengthSessions.length > 0
+  const hasEndurance = enduranceSessions.length > 0
+  // if only one kind exists, force that view
+  const activeView: View = hasStrength && hasEndurance ? view : hasStrength ? 'strength' : 'endurance'
 
-  const totalSessions = sessions.length
+  const weightUnitLabel = strengthSessions[0]?.weightUnit ?? 'kg'
+  const bestWeight = strengthSessions.reduce((m, s) => Math.max(m, s.topWeight ?? 0), 0)
+  const bestHang = enduranceSessions.reduce((m, s) => Math.max(m, s.totalHangSecs), 0)
   const totalHang = sessions.reduce((a, s) => a + s.totalHangSecs, 0)
 
-  // max-weight progression from weighted sessions (oldest → newest)
-  const weightData = [...sessions]
-    .filter((s) => s.weighted && s.topWeight != null)
+  // oldest → newest for the featured chart
+  const strengthData = [...strengthSessions]
     .reverse()
-    .map((s) => ({ label: fmtDate(s.date), weight: s.topWeight as number }))
-  const weightUnitLabel = sessions.find((s) => s.weighted)?.weightUnit ?? 'kg'
-  const bestWeight = weightData.reduce((m, d) => Math.max(m, d.weight), 0)
+    .map((s) => ({ label: fmtDate(s.date), value: s.topWeight ?? 0 }))
+  const enduranceData = [...enduranceSessions]
+    .reverse()
+    .map((s) => ({ label: fmtDate(s.date), value: s.totalHangSecs }))
+
+  const chartData = activeView === 'strength' ? strengthData : enduranceData
+  const yUnit = activeView === 'strength' ? weightUnitLabel : 's'
+  const lineColor = activeView === 'strength' ? 'var(--secondary)' : 'var(--primary)'
+  const chartLabel =
+    activeView === 'strength' ? 'Max weight per session' : 'Hang time per session'
 
   return (
     <div className="page">
@@ -70,24 +83,53 @@ export default function History() {
         </div>
       ) : (
         <>
+          {hasStrength && (
+            <div className="pr-card">
+              <span className="pr-tag">PR</span>
+              <div>
+                <div className="pr-label">Highest weighted hang</div>
+                <div className="pr-value">{fmtWeight(bestWeight, weightUnitLabel)}</div>
+              </div>
+            </div>
+          )}
+
           <div className="stat-row">
             <div className="stat">
-              <div className="n">{totalSessions}</div>
+              <div className="n">{sessions.length}</div>
               <div className="l">sessions</div>
             </div>
+            {hasEndurance && (
+              <div className="stat">
+                <div className="n">{fmtDuration(bestHang)}</div>
+                <div className="l">best hang</div>
+              </div>
+            )}
             <div className="stat">
               <div className="n">{fmtDuration(totalHang)}</div>
-              <div className="l">total hang time</div>
+              <div className="l">total hang</div>
             </div>
           </div>
 
-          <div className="section-label">Hang volume per session</div>
+          {hasStrength && hasEndurance && (
+            <div style={{ marginTop: 18 }}>
+              <Segmented<View>
+                value={activeView}
+                options={[
+                  { value: 'strength', label: 'Strength' },
+                  { value: 'endurance', label: 'Endurance' },
+                ]}
+                onChange={setView}
+              />
+            </div>
+          )}
+
+          <div className="section-label">{chartLabel}</div>
           <div className="card" style={{ height: 220, padding: '16px 8px 8px 0' }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 6, right: 16, bottom: 0, left: -18 }}>
                 <CartesianGrid stroke="var(--divider)" vertical={false} />
                 <XAxis dataKey="label" tick={{ fill: 'var(--muted)', fontSize: 10 }} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted)', fontSize: 10 }} tickLine={false} axisLine={false} unit="s" />
+                <YAxis tick={{ fill: 'var(--muted)', fontSize: 10 }} tickLine={false} axisLine={false} unit={yUnit} />
                 <Tooltip
                   contentStyle={{
                     background: 'var(--surface)',
@@ -95,56 +137,22 @@ export default function History() {
                     borderRadius: 10,
                     color: 'var(--on-surface)',
                   }}
-                  formatter={(v) => [`${v}s`, 'Hang']}
+                  formatter={(v) =>
+                    activeView === 'strength'
+                      ? [`${v} ${weightUnitLabel}`, 'Top weight']
+                      : [fmtDuration(Number(v)), 'Hang time']
+                  }
                 />
                 <Line
                   type="monotone"
-                  dataKey="hang"
-                  stroke="var(--primary)"
+                  dataKey="value"
+                  stroke={lineColor}
                   strokeWidth={3}
-                  dot={{ r: 3, fill: 'var(--primary)' }}
+                  dot={{ r: 3, fill: lineColor }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
-
-          {weightData.length > 0 && (
-            <>
-              <div className="section-label">
-                Max weight progression · best {fmtWeight(bestWeight, weightUnitLabel)}
-              </div>
-              <div className="card" style={{ height: 220, padding: '16px 8px 8px 0' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={weightData} margin={{ top: 6, right: 16, bottom: 0, left: -18 }}>
-                    <CartesianGrid stroke="var(--divider)" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fill: 'var(--muted)', fontSize: 10 }} tickLine={false} />
-                    <YAxis
-                      tick={{ fill: 'var(--muted)', fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={false}
-                      unit={weightUnitLabel}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'var(--surface)',
-                        border: 'none',
-                        borderRadius: 10,
-                        color: 'var(--on-surface)',
-                      }}
-                      formatter={(v) => [`${v} ${weightUnitLabel}`, 'Top weight']}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="weight"
-                      stroke="var(--secondary)"
-                      strokeWidth={3}
-                      dot={{ r: 3, fill: 'var(--secondary)' }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </>
-          )}
 
           <div className="section-label">Sessions</div>
           {sessions.map((s) => (
@@ -159,12 +167,15 @@ export default function History() {
                 </button>
               </div>
               <div className="chips" style={{ marginTop: 10 }}>
+                <span className={`chip ${isStrength(s) ? 'strength' : 'endurance'}`}>
+                  {isStrength(s) ? 'Strength' : 'Endurance'}
+                </span>
                 <span className="chip">{s.completedReps} reps</span>
                 <span className="chip">{fmtDuration(s.totalHangSecs)} on</span>
                 {s.weighted && s.topWeight != null && (
-                  <span className="chip accent">{fmtWeight(s.topWeight, s.weightUnit ?? 'kg')}</span>
+                  <span className="chip strength">{fmtWeight(s.topWeight, s.weightUnit ?? 'kg')}</span>
                 )}
-                {s.rpe != null && <span className="chip accent">RPE {s.rpe}</span>}
+                {s.rpe != null && <span className="chip">RPE {s.rpe}</span>}
               </div>
               <div className="chips">
                 <span className="chip">{gripSummary(s.grip)}</span>

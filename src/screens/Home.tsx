@@ -51,8 +51,12 @@ function ProgramCard({
       <div className="pc-foot">
         <div className="chips">
           <span className="chip">{gripSummary(program.grip)}</span>
-          {program.params.weighted && <span className="chip accent">Weighted</span>}
-          {program.params.unilateral && <span className="chip accent">1-hand</span>}
+          {program.params.weighted ? (
+            <span className="chip strength">Weighted</span>
+          ) : (
+            <span className="chip endurance">Endurance</span>
+          )}
+          {program.params.unilateral && <span className="chip">1-hand</span>}
         </div>
         <div className="time-badge" title="Total session time">
           <span className="tb-clock">◷</span>
@@ -117,7 +121,7 @@ export default function Home() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1>Hangboard</h1>
+          <h1>Hang 5</h1>
           <div className="sub">Pick a protocol to start training</div>
         </div>
       </div>

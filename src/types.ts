@@ -46,6 +46,14 @@ export interface ProgramParams {
    * values model assisted (removed) weight.
    */
   weighted?: boolean
+  /**
+   * How added weight is handled when `weighted`:
+   *  - 'progressive': a structured ramp (startWeight + weightStep per set)
+   *  - 'manual': no structure — the user dials the load in live during the
+   *    session (for people who just want to load a plate and go)
+   * Defaults to 'progressive' for backwards compatibility.
+   */
+  weightMode?: 'progressive' | 'manual'
   startWeight?: number // added weight on the first set (0 = bodyweight)
   weightStep?: number // added per subsequent set
 

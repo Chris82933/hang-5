@@ -52,7 +52,7 @@ export default function Configure() {
   }
 
   return (
-    <div className="page">
+    <div className="page has-action-bar">
       <div className="page-header">
         <button className="back-btn" onClick={() => nav(-1)}>
           ‹
@@ -123,12 +123,12 @@ export default function Configure() {
         ))}
       </div>
 
-      <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <button className="btn primary block lg" onClick={start}>
-          ▶ Start workout
+      <div className="action-bar">
+        <button className="btn" onClick={saveAsMine}>
+          {prog.builtIn ? 'Save copy' : 'Save'}
         </button>
-        <button className="btn block" onClick={saveAsMine}>
-          {prog.builtIn ? 'Save a copy to My programs' : 'Save changes'}
+        <button className="btn primary" onClick={start}>
+          ▶ Start
         </button>
       </div>
     </div>

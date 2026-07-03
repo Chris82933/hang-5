@@ -177,6 +177,15 @@
   color: var(--on-primary);
   border-color: var(--border-col);
 }
+/* semantic accents: strength (weighted) vs endurance (repeaters) */
+.chip.strength {
+  background: var(--secondary);
+  color: var(--on-secondary);
+}
+.chip.endurance {
+  background: var(--primary);
+  color: var(--on-primary);
+}
 
 /* ---- buttons ------------------------------------------------------------ */
 .btn {
@@ -225,7 +234,7 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--on-background);
-  margin: 26px 0 12px;
+  margin: 18px 0 9px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -243,7 +252,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 0;
+  padding: 11px 0;
   gap: 12px;
   border-bottom: 2px solid var(--divider);
 }
@@ -251,8 +260,10 @@
   border-bottom: none;
 }
 .field label {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 .field .hint {
   font-size: 12px;
@@ -362,6 +373,36 @@
 .toggle.on::after {
   transform: translateX(30px);
   background: var(--accent-yellow);
+}
+
+/* floating action bar (e.g. Start / Save on the configure screen) */
+.page.has-action-bar {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 96px);
+}
+.action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  max-width: var(--maxw);
+  margin: 0 auto;
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-top: var(--bw) solid var(--border-col);
+  z-index: 20;
+}
+.action-bar .btn {
+  box-shadow: var(--hard-sm);
+}
+.action-bar .btn:not(.primary) {
+  flex: 1;
+}
+.action-bar .btn.primary {
+  flex: 2;
+  padding: 16px;
+  font-size: 16px;
 }
 
 /* ---- bottom nav --------------------------------------------------------- */
@@ -521,6 +562,38 @@
   background: #fff;
 }
 
+/* live manual weight control */
+.weight-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.weight-control button {
+  width: 54px;
+  height: 54px;
+  border: 3px solid #111;
+  background: #fff;
+  color: #111;
+  font-size: 28px;
+  font-weight: 800;
+  box-shadow: 4px 4px 0 #111;
+}
+.weight-control button:active {
+  box-shadow: none;
+  transform: translate(4px, 4px);
+}
+.weight-control .wc-val {
+  background: var(--accent-yellow);
+  color: #111;
+  border: 3px solid #111;
+  padding: 10px 16px;
+  font-size: 22px;
+  font-weight: 800;
+  min-width: 140px;
+  text-align: center;
+}
+
 /* +/- 10s rest adjustment */
 .rest-adjust {
   display: flex;
@@ -616,6 +689,41 @@
   box-shadow: none;
   transform: translate(5px, 5px);
 }
+/* personal-record banner */
+.pr-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  border: var(--bw) solid var(--border-col);
+  border-radius: var(--radius);
+  box-shadow: var(--hard);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.pr-card .pr-tag {
+  flex: none;
+  background: var(--secondary);
+  color: var(--on-secondary);
+  border: var(--bw) solid var(--border-col);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 1px;
+  padding: 10px 13px;
+}
+.pr-card .pr-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.pr-card .pr-value {
+  font-size: 28px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
 .session-item {
   display: flex;
   justify-content: space-between;

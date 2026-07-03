@@ -21,7 +21,19 @@ export default function Workout() {
   }, [program, nav])
 
   const workout = useWorkout(program!)
-  const { state, start, pause, resume, stop, skipNext, skipPrev, adjustTime, summary } = workout
+  const {
+    state,
+    weightMode,
+    start,
+    pause,
+    resume,
+    stop,
+    skipNext,
+    skipPrev,
+    adjustTime,
+    adjustWeight,
+    summary,
+  } = workout
 
   useEffect(() => {
     if (program && !started.current) {
@@ -113,8 +125,19 @@ export default function Workout() {
             Rep {state.repIndex} of {state.repsInSet}
           </div>
         )}
-        {state.segType === 'hang' && state.targetWeight != null && (
+        {weightMode === 'progressive' && state.segType === 'hang' && state.targetWeight != null && (
           <div className="weight-badge">{fmtWeight(state.targetWeight, weightUnit)}</div>
+        )}
+        {weightMode === 'manual' && (
+          <div className="weight-control">
+            <button onClick={() => adjustWeight(-2.5)} aria-label="lighter">
+              −
+            </button>
+            <span className="wc-val">{fmtWeight(state.manualWeight ?? 0, weightUnit)}</span>
+            <button onClick={() => adjustWeight(2.5)} aria-label="heavier">
+              +
+            </button>
+          </div>
         )}
         {isRestLike && (
           <div className="rest-adjust">
