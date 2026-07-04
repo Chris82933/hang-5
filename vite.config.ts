@@ -13,18 +13,23 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       workbox: {
-        // include audio + icons so the app works fully offline
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,mp3}'],
+        // precache every built asset (incl. audio) so the app runs fully offline
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,mp3,woff2,webmanifest}'],
+        // serve the SPA shell for any navigation while offline
+        navigateFallback: 'index.html',
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
       },
       manifest: {
-        name: 'Hangboard Trainer',
-        short_name: 'Hangboard',
-        description: 'Finger-strength training timer for climbers',
+        name: 'Hang 5 — Hangboard Trainer',
+        short_name: 'Hang 5',
+        description: 'Finger-strength training timer for climbers. Works offline.',
         theme_color: '#121212',
         background_color: '#121212',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        start_url: '.',
+        scope: '.',
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },

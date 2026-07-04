@@ -1,7 +1,48 @@
 import { useSettings, type SoundTheme, type ThemeMode } from '../store/settings'
 import { soundEngine } from '../engine/audio'
 import { Field, Toggle, Segmented, Stepper } from '../components/ui'
+import { useInstallState, promptInstall } from '../lib/pwaInstall'
 import type { WeightUnit } from '../types'
+
+function InstallSection() {
+  const { installed, canPrompt, ios } = useInstallState()
+
+  return (
+    <>
+      <div className="section-label">Install app</div>
+      {installed ? (
+        <div className="card">
+          <div style={{ fontWeight: 700 }}>✓ Installed</div>
+          <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 13 }}>
+            You’re running Hang 5 as an app. It works fully offline — no internet needed.
+          </p>
+        </div>
+      ) : (
+        <div className="card">
+          <p style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.5 }}>
+            Add Hang 5 to your home screen for full-screen, offline training — once installed it
+            works with no internet connection.
+          </p>
+          {canPrompt && (
+            <button className="btn primary block" onClick={() => void promptInstall()}>
+              ＋ Add to home screen
+            </button>
+          )}
+          <div className="install-steps">
+            <div className={ios ? 'ihi' : undefined}>
+              <strong>iPhone / iPad (Safari):</strong> tap the Share button, then{' '}
+              <strong>“Add to Home Screen”</strong>.
+            </div>
+            <div className={!ios ? 'ihi' : undefined}>
+              <strong>Android (Chrome):</strong> tap the menu (⋮), then <strong>“Install app”</strong>{' '}
+              or “Add to Home screen”.
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
 
 const SOUND_THEMES: { value: SoundTheme; label: string }[] = [
   { value: 'beeps', label: 'Beeps' },
@@ -135,6 +176,8 @@ export default function Settings() {
         </div>
       </div>
 
+      <InstallSection />
+
       <div className="section-label">Sync</div>
       <div className="card">
         <Field label="Google account sync" hint="Coming soon — your data is saved locally on this device">
@@ -143,7 +186,7 @@ export default function Settings() {
       </div>
 
       <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12, marginTop: 24 }}>
-        Hangboard Trainer · data stored locally on your device
+        Hang 5 · works offline · data stored locally on your device
       </p>
     </div>
   )

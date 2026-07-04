@@ -738,6 +738,22 @@
   font-size: 13px;
 }
 
+/* install instructions */
+.install-steps {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.install-steps .ihi {
+  color: var(--on-surface);
+  border-left: 4px solid var(--secondary);
+  padding-left: 10px;
+}
+
 /* personal-record banner */
 .pr-card {
   display: flex;

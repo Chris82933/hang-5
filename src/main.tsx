@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import './index.css'
 import './App.css'
+import './lib/pwaInstall' // capture the install prompt as early as possible
 import App from './App.tsx'
 
 // HashRouter keeps client-side routing working on any static host (incl. GitHub
