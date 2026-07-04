@@ -128,6 +128,9 @@ export default function Home() {
           <h1>Hang 5</h1>
           <div className="sub">Pick a protocol to start training</div>
         </div>
+        <button className="header-action" onClick={() => nav('/editor')}>
+          <span className="plus">+</span> New
+        </button>
       </div>
 
       {favs.length > 0 && (
@@ -148,10 +151,6 @@ export default function Home() {
           {customSection}
         </>
       )}
-
-      <button className="fab" onClick={() => nav('/editor')} aria-label="Create program">
-        Create <span className="plus">+</span>
-      </button>
     </div>
   )
 }

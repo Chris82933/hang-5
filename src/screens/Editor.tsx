@@ -30,6 +30,7 @@ export default function Editor() {
   const { id } = useParams()
   const nav = useNavigate()
   const [prog, setProg] = useState<Program>(blankProgram)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const isEdit = Boolean(id)
 
   useEffect(() => {
@@ -184,11 +185,26 @@ export default function Editor() {
         <button className="btn primary block lg" onClick={save}>
           Save program
         </button>
-        {isEdit && (
-          <button className="btn block danger" onClick={remove}>
-            Delete program
-          </button>
-        )}
+        {isEdit &&
+          (confirmDelete ? (
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontWeight: 700, textAlign: 'center' }}>
+                Delete this program? This can’t be undone.
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn block" onClick={() => setConfirmDelete(false)}>
+                  Cancel
+                </button>
+                <button className="btn block danger" onClick={remove}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button className="btn block danger" onClick={() => setConfirmDelete(true)}>
+              Delete program
+            </button>
+          ))}
       </div>
     </div>
   )

@@ -68,22 +68,6 @@ export const PRESET_PROGRAMS: Program[] = [
     },
   },
   {
-    id: 'max-hangs',
-    name: 'Max Hangs',
-    kind: 'max-hang',
-    description: '10s near-maximal hangs, 5 sets, 3 min rest. Pure finger strength.',
-    builtIn: true,
-    grip: maxHangGrip,
-    params: {
-      prepSecs: 15,
-      sets: 5,
-      repsPerSet: 1,
-      hangSecs: 10,
-      restSecs: 0,
-      restBetweenSetsSecs: 180,
-    },
-  },
-  {
     id: 'weighted-max-hangs',
     name: 'Weighted Max Hangs',
     kind: 'max-hang',

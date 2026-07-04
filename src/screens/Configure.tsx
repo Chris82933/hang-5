@@ -65,6 +65,11 @@ export default function Configure() {
             {effUnilateral && ' · one hand at a time'}
           </div>
         </div>
+        {!prog.builtIn && (
+          <button className="header-action" onClick={() => nav(`/editor/${prog.id}`)}>
+            Edit
+          </button>
+        )}
       </div>
 
       {isAdvanced(prog) ? (
